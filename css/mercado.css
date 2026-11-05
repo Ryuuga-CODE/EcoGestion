@@ -110,6 +110,20 @@ body.sin-sesion .contenido {
     height: 17px;
 }
 
+a.menu-item {
+    text-decoration: none;
+}
+
+.enlace-ayuda {
+    margin: 12px 0 0;
+    font-size: 0.78rem;
+}
+
+.enlace-ayuda a {
+    color: var(--verde-700);
+    font-weight: 650;
+}
+
 /* --------------------------------- Avatares --------------------------------- */
 .avatar {
     display: inline-grid;

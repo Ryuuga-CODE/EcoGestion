@@ -6,6 +6,15 @@ Aplicación web para registrar, controlar y comerciar materiales aprovechables. 
 
 Tecnologías: HTML5, CSS3, JavaScript sin frameworks, SQLite (sql.js) en el navegador, PostgreSQL + Auth + Storage en Supabase y Google Identity Services.
 
+## Documentación
+
+| Para | Documento |
+|---|---|
+| **Usuarios** (vendedores, compradores, empresas, administradores) | [Guía de uso](https://ryuuga-code.github.io/EcoGestion/ayuda.html) · `ayuda.html`, también enlazada desde la app |
+| **Desarrolladores** | [Guía para desarrolladores](docs/GUIA_DESARROLLADOR.md): arquitectura, modelo de datos, seguridad, funciones y cómo extender |
+| **Pruebas** | [pruebas/README.md](pruebas/README.md): Supabase simulado, pruebas SQL y de navegador |
+| **Puesta en marcha** | Este archivo, secciones 5 y 11 |
+
 ---
 
 ## 1. Arquitectura
@@ -34,10 +43,15 @@ Tecnologías: HTML5, CSS3, JavaScript sin frameworks, SQLite (sql.js) en el nave
 ```
 SistemaGestionResiduos/
 ├── index.html                  Interfaz (vistas, formularios y pantalla de acceso)
+├── ayuda.html                  Guía de uso para usuarios (con capturas en img/ayuda/)
 ├── README.md
+├── docs/GUIA_DESARROLLADOR.md  Documentación técnica
+├── pruebas/                    Supabase simulado, prueba_sql.sh y prueba_e2e.js
+├── herramientas/               generar_datos_sql.js
 ├── css/
 │   ├── estilos.css             Diseño base
-│   └── mercado.css             Acceso, mercado, ofertas, administración
+│   ├── mercado.css             Acceso, mercado, ofertas, administración
+│   └── ayuda.css               Guía de uso
 ├── supabase/
 │   └── esquema_supabase.sql    Base central: tablas, RLS, funciones, Storage, roles
 ├── database/

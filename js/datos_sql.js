@@ -4,7 +4,7 @@
    Se usa para crear la réplica local (sql.js) donde se cargan
    los datos que vienen de Supabase. Está embebida porque el
    navegador no deja leer archivos .sql con fetch() desde file://.
-   Si modificas los .sql, actualiza también esta copia.
+   NO lo edites a mano: ejecuta node herramientas/generar_datos_sql.js
    ============================================================ */
 (function () {
     'use strict';
