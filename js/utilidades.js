@@ -201,6 +201,8 @@
     }
 
     function mensajeError(error, mensajePredeterminado) {
+        // Mensajes que ya vienen redactados por el servidor (Supabase) o la conexión
+        if (error && error.mensajeServidor) return error.mensajeServidor;
         const texto = String(error && error.message ? error.message : error || '');
         if (/UNIQUE constraint failed: materiales\.nombre/i.test(texto)) {
             return 'Ya existe un material con ese nombre.';

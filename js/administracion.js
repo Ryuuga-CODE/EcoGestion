@@ -119,7 +119,7 @@
             peligro: !activar
         });
         if (!confirmado) return;
-        Eco.DB.ejecutar('UPDATE perfiles SET activo = ? WHERE id_usuario = ?', [activar ? 1 : 0, id]);
+        await Eco.Nube.rpc('admin_estado_usuario', { p_id: id, p_activo: activar });
         await Eco.App.despuesDeCambio(activar ? 'Cuenta activada.' : 'Cuenta desactivada.');
     }
 
@@ -154,20 +154,11 @@
                 Eco.Util.mostrarErrorCampo('rol-nuevo', 'Debe quedar al menos un administrador activo.');
                 return;
             }
-            Eco.DB.transaccion(() => {
-                Eco.Sesion.asignarRol(cuenta.id_usuario, nuevo);
-                if (cuenta.rol === 'vendedor') {
-                    // Al dejar de ser vendedor, sus ofertas pendientes se rechazan.
-                    Eco.DB.ejecutar(
-                        `UPDATE ofertas SET estado = 'Rechazada', fecha_respuesta = datetime('now', 'localtime')
-                         WHERE estado = 'Pendiente' AND id_publicacion IN
-                               (SELECT id_publicacion FROM publicaciones WHERE id_vendedor = ?)`,
-                        [cuenta.id_usuario]);
-                }
-            });
+            // El servidor cambia el tipo y, si deja de ser vendedor, rechaza sus ofertas pendientes.
+            await Eco.Nube.rpc('admin_rol_usuario', { p_id: cuenta.id_usuario, p_rol: nuevo });
             usuarioRol = null;
             Eco.App.cerrarModal('modal-rol');
-            await Eco.App.despuesDeCambio('Tipo de cuenta actualizado. Se aplicará la próxima vez que esa persona inicie sesión.');
+            await Eco.App.despuesDeCambio('Tipo de cuenta actualizado. Se aplicará en la próxima actualización de su sesión.');
         } catch (error) {
             Eco.Util.mostrarAviso(Eco.Util.mensajeError(error, error.message), 'error');
         }

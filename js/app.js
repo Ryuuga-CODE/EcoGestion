@@ -1,7 +1,7 @@
 /* ============================================================
    EcoGestión · Aplicación
-   Navegación, modales, inicialización y gestión del archivo
-   SQLite (descarga, carga y restauración de la demo).
+   Navegación, modales, inicialización, sincronización con
+   Supabase y descarga de la réplica SQLite.
    ============================================================ */
 (function () {
     'use strict';
@@ -191,31 +191,21 @@
         document.getElementById('btn-confirmar-accion').addEventListener('click', () => resolverConfirmar(true));
     }
 
-    function actualizarEstado(info) {
+    function actualizarEstado(texto, detalle, error) {
         const estado = document.getElementById('estado-guardado');
         const ultimo = document.getElementById('ultimo-guardado');
         const punto = document.getElementById('punto-estado');
         if (!estado || !ultimo || !punto) return;
-
-        punto.className = 'punto-estado ok';
-        estado.textContent = info && info.backend === 'localStorage'
-            ? 'Guardado en respaldo local'
-            : 'Guardado automático';
-        if (info && info.actualizado) {
-            ultimo.textContent = `Último guardado: ${Eco.Util.formatearFechaHora(info.actualizado)}`;
-        } else {
-            ultimo.textContent = 'Base de datos lista';
-        }
+        punto.className = `punto-estado ${error ? 'error' : 'ok'}`;
+        estado.textContent = texto;
+        ultimo.textContent = detalle || '';
     }
 
-    function actualizarEstadoError(mensaje) {
-        const estado = document.getElementById('estado-guardado');
-        const ultimo = document.getElementById('ultimo-guardado');
-        const punto = document.getElementById('punto-estado');
-        if (!estado || !ultimo || !punto) return;
-        punto.className = 'punto-estado error';
-        estado.textContent = 'No se pudo guardar';
-        ultimo.textContent = mensaje || 'Descarga una copia de la base.';
+    /** Muestra la hora de la última sincronización con Supabase. */
+    function marcarSincronizado() {
+        const fecha = Eco.DB.ultimaSincronizacion();
+        actualizarEstado('Sincronizado con Supabase',
+            fecha ? `Actualizado: ${Eco.Util.formatearFechaHora(fecha.toISOString())}` : '');
     }
 
     function refrescarTodo() {
@@ -250,25 +240,62 @@
         }
     }
 
-    async function despuesDeCambio(mensaje) {
-        let guardado = false;
-        try {
-            const info = await Eco.DB.persistir();
-            actualizarEstado(info);
-            guardado = true;
-        } catch (error) {
-            console.error('Error al guardar la base:', error);
-            actualizarEstadoError('Usa “Descargar” para conservar los cambios.');
-        }
+    function hayModalAbierto() {
+        return Boolean(document.querySelector('.modal-fondo.abierto'));
+    }
+
+    /** Descarga los datos del servidor y redibuja la vista. */
+    async function sincronizar() {
+        await Eco.Nube.sincronizar();
+        marcarSincronizado();
+        Eco.Sesion.revalidar();
         refrescarTodo();
-        if (guardado && mensaje) {
-            Eco.Util.mostrarAviso(mensaje, 'exito');
-        } else if (!guardado) {
+    }
+
+    /**
+     * Se llama después de cada operación exitosa en el servidor:
+     * vuelve a sincronizar la réplica para que todas las vistas
+     * muestren el estado actual.
+     */
+    async function despuesDeCambio(mensaje) {
+        try {
+            await sincronizar();
+            if (mensaje) Eco.Util.mostrarAviso(mensaje, 'exito');
+        } catch (error) {
+            console.warn(error);
+            actualizarEstado('Sin sincronizar', 'Recarga la página para ver los datos más recientes.', true);
             Eco.Util.mostrarAviso(
-                'Los cambios están en memoria, pero no se pudieron guardar automáticamente. Descarga el archivo .sqlite.',
+                (mensaje ? `${mensaje} ` : '') + 'No se pudieron actualizar los datos en pantalla; recarga la página.',
                 'error'
             );
         }
+    }
+
+    // Actualización periódica: trae los cambios que hacen otras personas.
+    let temporizador = null;
+    let actualizando = false;
+    async function actualizarEnSegundoPlano() {
+        if (actualizando || document.visibilityState !== 'visible' || hayModalAbierto()) return;
+        if (!Eco.Sesion.usuarioActual()) return;
+        actualizando = true;
+        try {
+            await sincronizar();
+        } catch (error) {
+            console.warn(error);
+            actualizarEstado('Sin conexión', error.mensajeServidor || 'Se reintentará en unos segundos.', true);
+            if (error.codigo === 'sesion') {
+                Eco.Util.mostrarAviso('Tu sesión venció. Inicia sesión de nuevo.', 'error');
+                window.setTimeout(() => Eco.Sesion.cerrarSesion(), 1500);
+            }
+        } finally {
+            actualizando = false;
+        }
+    }
+
+    function iniciarActualizacionPeriodica() {
+        if (temporizador) return;
+        temporizador = window.setInterval(actualizarEnSegundoPlano, 30000);
+        window.addEventListener('focus', actualizarEnSegundoPlano);
     }
 
     function descargarBaseDatos() {
@@ -279,91 +306,31 @@
                 `${dosDigitos(ahora.getHours())}${dosDigitos(ahora.getMinutes())}`;
             const blob = new Blob([bytes], { type: 'application/x-sqlite3' });
             Eco.Util.descargarArchivo(`ecogestion_${marca}.sqlite`, blob, 'application/x-sqlite3');
-            Eco.Util.mostrarAviso('Archivo SQLite descargado. Guárdalo como copia de seguridad.');
+            Eco.Util.mostrarAviso('Copia SQLite descargada (contiene los datos que tu cuenta puede ver).');
         } catch (error) {
             console.error(error);
             Eco.Util.mostrarAviso('No se pudo descargar la base de datos.', 'error');
         }
     }
 
-    async function importarArchivo(archivo) {
-        if (!archivo) return;
-        if (archivo.size > 50 * 1024 * 1024) {
-            Eco.Util.mostrarAviso('El archivo supera el límite de 50 MB.', 'error');
-            return;
-        }
-
-        const confirmado = await confirmar({
-            titulo: 'Cargar base de datos',
-            mensaje: `Se reemplazará la base actual por “${archivo.name}”. ` +
-                'Si necesitas conservar los datos actuales, cancela y descarga primero una copia.',
-            textoConfirmar: 'Cargar archivo',
-            peligro: true
-        });
-        if (!confirmado) return;
-
-        try {
-            const buffer = await archivo.arrayBuffer();
-            Eco.DB.reemplazarCon(new Uint8Array(buffer));
-            Eco.Sesion.revalidar();
-            await despuesDeCambio('Base de datos cargada correctamente.');
-            irA('panel');
-        } catch (error) {
-            console.error(error);
-            Eco.Util.mostrarAviso(
-                Eco.Util.mensajeError(error, 'No se pudo cargar el archivo seleccionado.'),
-                'error'
-            );
-        }
-    }
-
-    async function restaurarDemo() {
-        const confirmado = await confirmar({
-            titulo: 'Restaurar datos de demostración',
-            mensaje: 'Se reemplazará toda la información actual por la base de demostración. Esta acción no se puede deshacer.',
-            textoConfirmar: 'Restaurar demo',
-            peligro: true
-        });
-        if (!confirmado) return;
-
-        try {
-            Eco.DB.restaurarDemo();
-            Eco.Sesion.revalidar();
-            await despuesDeCambio('Base de demostración restaurada.');
-            irA('panel');
-        } catch (error) {
-            console.error(error);
-            Eco.Util.mostrarAviso('No se pudo restaurar la base de demostración.', 'error');
-        }
-    }
-
     function iniciarBaseDatosUI() {
         document.getElementById('btn-descargar-bd').addEventListener('click', descargarBaseDatos);
-        const input = document.getElementById('input-importar-bd');
-        document.getElementById('btn-cargar-bd').addEventListener('click', () => {
-            input.value = '';
-            input.click();
-        });
-        input.addEventListener('change', () => {
-            const archivo = input.files && input.files[0];
-            if (archivo) importarArchivo(archivo);
-        });
-        document.getElementById('btn-restaurar-demo').addEventListener('click', restaurarDemo);
-        document.getElementById('btn-reintentar').addEventListener('click', () => window.location.reload());
-        document.getElementById('btn-reiniciar-bd').addEventListener('click', async () => {
-            if (!window.confirm('Se eliminará la base guardada en este navegador y se recargará la aplicación. ¿Continuar?')) {
-                return;
+        document.getElementById('btn-sincronizar').addEventListener('click', async () => {
+            try {
+                await sincronizar();
+                Eco.Util.mostrarAviso('Datos actualizados.');
+            } catch (error) {
+                Eco.Util.mostrarAviso(Eco.Util.mensajeError(error, 'No se pudo sincronizar.'), 'error');
             }
-            await Eco.Almacenamiento.eliminar();
-            window.location.reload();
         });
+        document.getElementById('btn-reintentar').addEventListener('click', () => window.location.reload());
     }
 
     function mostrarError(mensaje) {
         const capa = document.getElementById('capa-error');
         document.getElementById('mensaje-error').textContent = mensaje;
         capa.hidden = false;
-        actualizarEstadoError('La base no está disponible.');
+        actualizarEstado('Sin conexión', 'La aplicación no pudo iniciar.', true);
     }
 
     async function iniciar() {
@@ -388,21 +355,15 @@
         Eco.Administracion.init();
 
         try {
-            const info = await Eco.DB.iniciar();
-            actualizarEstado({
-                backend: info.backend,
-                actualizado: info.actualizado || new Date().toISOString()
-            });
+            await Eco.DB.iniciar();
+            actualizarEstado('Conectando…', 'Base central en Supabase');
             // La sesión decide qué se muestra: pantalla de acceso o la vista inicial del rol.
             await Eco.Sesion.iniciar();
             document.getElementById('capa-carga').classList.add('oculto');
-            if (info.advertencia) {
-                Eco.Util.mostrarAviso(info.advertencia, 'error');
-            }
         } catch (error) {
             console.error(error);
             document.getElementById('capa-carga').classList.add('oculto');
-            mostrarError(error.message || 'No se pudo inicializar SQLite.');
+            mostrarError(error.message || 'No se pudo iniciar la aplicación.');
         }
     }
 
@@ -415,7 +376,9 @@
         abrirModal,
         cerrarModal,
         notificar: Eco.Util.mostrarAviso,
-        descargarBaseDatos
+        descargarBaseDatos,
+        marcarSincronizado,
+        iniciarActualizacionPeriodica
     };
 
     if (document.readyState === 'loading') {

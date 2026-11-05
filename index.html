@@ -291,34 +291,30 @@
                     <svg class="icono" aria-hidden="true"><use href="#i-salir"></use></svg>
                 </button>
             </div>
-            <div class="panel-bd" data-permiso="inventario.gestionar">
+            <div class="panel-bd">
                 <div class="panel-bd-titulo">
                     <svg class="icono" aria-hidden="true"><use href="#i-base-datos"></use></svg>
-                    <span>Base de datos SQLite</span>
+                    <span>Base de datos</span>
                 </div>
-                <div class="estado-bd" title="La base se guarda en este navegador">
+                <div class="estado-bd" title="Base central en Supabase con réplica SQLite local">
                     <span class="punto-estado" id="punto-estado"></span>
                     <div>
-                        <strong id="estado-guardado">Guardado automático</strong>
+                        <strong id="estado-guardado">Conectando…</strong>
                         <small id="ultimo-guardado">Iniciando…</small>
                     </div>
                 </div>
                 <div class="botones-bd">
+                    <button type="button" class="boton-bd" id="btn-sincronizar">
+                        <svg class="icono" aria-hidden="true"><use href="#i-actualizar"></use></svg>
+                        Sincronizar
+                    </button>
                     <button type="button" class="boton-bd" id="btn-descargar-bd">
                         <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
-                        Descargar
-                    </button>
-                    <button type="button" class="boton-bd" id="btn-cargar-bd">
-                        <svg class="icono" aria-hidden="true"><use href="#i-subir"></use></svg>
-                        Cargar
+                        Copia
                     </button>
                 </div>
-                <button type="button" class="boton-restaurar" id="btn-restaurar-demo">
-                    <svg class="icono" aria-hidden="true"><use href="#i-actualizar"></use></svg>
-                    Restaurar demo
-                </button>
             </div>
-            <p class="nota-local">Los datos viven en este navegador. No hay sincronización entre equipos.</p>
+            <p class="nota-local">Los datos se guardan en Supabase. Cada navegador trabaja con una réplica SQLite que se actualiza sola.</p>
         </div>
     </aside>
 
@@ -1930,11 +1926,10 @@
             <div class="error-icono">
                 <svg class="icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
             </div>
-            <h2>No se pudo iniciar la base de datos</h2>
+            <h2>No se pudo iniciar EcoGestión</h2>
             <p id="mensaje-error">Ocurrió un error inesperado.</p>
             <div class="error-acciones">
                 <button type="button" class="boton boton-primario" id="btn-reintentar">Reintentar</button>
-                <button type="button" class="boton boton-secundario" id="btn-reiniciar-bd">Restaurar base demo</button>
             </div>
             <small>Si el problema persiste, verifica que el archivo <code>js/lib/sql-asm.js</code> exista.</small>
         </div>
@@ -1974,7 +1969,7 @@
             <section class="acceso-tarjeta">
                 <div id="paso-acceso">
                     <h2>Inicia sesión</h2>
-                    <p class="acceso-subtitulo">Usa tu cuenta de Google. Si es tu primera vez, crearemos tu cuenta y elegirás qué tipo de cuenta necesitas.</p>
+                    <p class="acceso-subtitulo">Usa tu cuenta de Google. Si es tu primera vez, crearás tu cuenta y elegirás qué tipo de cuenta necesitas.</p>
                     <div class="acceso-error" id="acceso-error" role="alert" hidden></div>
                     <div class="acceso-google" id="acceso-google">
                         <div class="boton-google" id="boton-google"></div>
@@ -1985,14 +1980,7 @@
                         EcoGestión solo recibe tu nombre, correo y foto de Google. Nunca ve ni guarda tu contraseña.
                     </p>
 
-                    <div class="acceso-demo" id="acceso-demo" hidden>
-                        <div class="separador-acceso"><span>Acceso de demostración</span></div>
-                        <p class="aviso-demo">
-                            <svg class="icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
-                            <span>Entra con una cuenta de prueba, sin Google. <strong>No es un inicio de sesión real</strong>: úsalo solo para presentar el sistema. Se desactiva en <code>js/config.js</code>.</span>
-                        </p>
-                        <div class="lista-demo" id="lista-demo"></div>
-                    </div>
+                    <p class="aviso-acceso acceso-cargando" id="acceso-cargando" hidden>Conectando con el servidor…</p>
                 </div>
 
                 <div id="paso-registro" hidden>
@@ -2076,7 +2064,6 @@
 
     <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 
-    <input type="file" id="input-importar-bd" accept=".sqlite,.sqlite3,.db,application/x-sqlite3,application/octet-stream" hidden>
 
     <noscript>
         <div class="aviso-noscript">
@@ -2086,7 +2073,6 @@
 
     <script src="js/lib/sql-asm.js"></script>
     <script src="js/utilidades.js"></script>
-    <script src="js/almacenamiento.js"></script>
     <script src="js/datos_sql.js"></script>
     <script src="js/database.js"></script>
     <script src="js/materiales.js"></script>
@@ -2097,6 +2083,7 @@
     <script src="js/panel.js"></script>
     <!-- Ampliación: cuentas, roles y mercado -->
     <script src="js/config.js"></script>
+    <script src="js/nube.js"></script>
     <script src="js/sesion.js"></script>
     <script src="js/perfil.js"></script>
     <script src="js/mercado.js"></script>

@@ -19,9 +19,7 @@
         document.getElementById('perfil-nombre').textContent = usuario.nombre;
         document.getElementById('perfil-correo').textContent = usuario.correo || 'Sin correo registrado';
         document.getElementById('perfil-rol').textContent = usuario.rol_nombre;
-        document.getElementById('perfil-metodo').textContent = Eco.Sesion.metodo() === 'google'
-            ? 'Cuenta de Google'
-            : 'Acceso de demostración (sin Google)';
+        document.getElementById('perfil-metodo').textContent = 'Cuenta de Google';
 
         const formulario = document.getElementById('form-perfil');
         if (!formulario.contains(document.activeElement)) {
@@ -65,9 +63,7 @@
         if (!valido) return;
 
         try {
-            Eco.DB.ejecutar('UPDATE perfiles SET telefono = ?, ubicacion = ? WHERE id_usuario = ?',
-                [telefono || null, ubicacion, usuario.id_usuario]);
-            Eco.Sesion.refrescarUsuario();
+            await Eco.Nube.rpc('actualizar_perfil', { p_telefono: telefono || null, p_ubicacion: ubicacion });
             document.activeElement.blur();
             await Eco.App.despuesDeCambio('Perfil actualizado.');
         } catch (error) {

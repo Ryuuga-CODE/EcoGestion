@@ -236,20 +236,12 @@
         guardando = true;
         boton.disabled = true;
         try {
-            Eco.DB.transaccion(() => {
-                Eco.DB.ejecutar(
-                    `INSERT INTO movimientos
-                        (id_material, id_recoleccion, id_usuario, tipo, cantidad, unidad_medida, fecha, observaciones)
-                     VALUES (?, NULL, ?, 'Salida', ?, ?, ?, ?)`,
-                    [
-                        datos.idMaterial,
-                        datos.idUsuario,
-                        datos.cantidad,
-                        datos.unidad,
-                        datos.fecha,
-                        datos.observaciones
-                    ]
-                );
+            await Eco.Nube.rpc('registrar_salida', {
+                p_id_material: datos.idMaterial,
+                p_id_responsable: datos.idUsuario,
+                p_cantidad: datos.cantidad,
+                p_fecha: datos.fecha,
+                p_observaciones: datos.observaciones
             });
 
             Eco.App.cerrarModal('modal-salida');

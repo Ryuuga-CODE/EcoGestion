@@ -79,20 +79,16 @@
         if (datos.descripcion.length > 400) error('empresa-descripcion', 'La descripción no puede superar 400 caracteres.');
         if (!valido) return;
 
-        const parametros = [datos.razon, datos.nit || null, datos.telefono || null, datos.correo || null,
-            datos.direccion || null, datos.ciudad, datos.descripcion || null];
         try {
-            if (empresaActual()) {
-                Eco.DB.ejecutar(
-                    `UPDATE empresas SET razon_social = ?, nit = ?, telefono = ?, correo_contacto = ?,
-                         direccion = ?, ciudad = ?, descripcion = ? WHERE id_usuario = ?`,
-                    [...parametros, usuario.id_usuario]);
-            } else {
-                Eco.DB.ejecutar(
-                    `INSERT INTO empresas (razon_social, nit, telefono, correo_contacto, direccion, ciudad, descripcion, id_usuario)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                    [...parametros, usuario.id_usuario]);
-            }
+            await Eco.Nube.rpc('guardar_empresa', {
+                p_razon_social: datos.razon,
+                p_nit: datos.nit || null,
+                p_telefono: datos.telefono || null,
+                p_correo: datos.correo || null,
+                p_direccion: datos.direccion || null,
+                p_ciudad: datos.ciudad,
+                p_descripcion: datos.descripcion || null
+            });
             document.activeElement.blur();
             await Eco.App.despuesDeCambio('Perfil empresarial guardado.');
         } catch (error) {
@@ -180,18 +176,15 @@
         if (!valido) return;
 
         try {
-            if (necesidadEditando) {
-                Eco.DB.ejecutar(
-                    `UPDATE necesidades_empresa SET tipo_residuo = ?, descripcion = ?, cantidad_minima = ?,
-                         cantidad_maxima = ?, unidad = ?, precio_ofrecido = ?
-                     WHERE id_necesidad = ? AND id_empresa = ?`,
-                    [tipo, descripcion || null, minima.valor, maxima.valor, unidad, precio.valor, necesidadEditando, empresa.id_empresa]);
-            } else {
-                Eco.DB.ejecutar(
-                    `INSERT INTO necesidades_empresa (id_empresa, tipo_residuo, descripcion, cantidad_minima, cantidad_maxima, unidad, precio_ofrecido)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [empresa.id_empresa, tipo, descripcion || null, minima.valor, maxima.valor, unidad, precio.valor]);
-            }
+            await Eco.Nube.rpc('guardar_necesidad', {
+                p_id: necesidadEditando || null,
+                p_tipo: tipo,
+                p_descripcion: descripcion || null,
+                p_minima: minima.valor,
+                p_maxima: maxima.valor,
+                p_unidad: unidad,
+                p_precio: precio.valor
+            });
             const mensaje = necesidadEditando ? 'Necesidad actualizada.' : 'Necesidad publicada. Los vendedores la verán en el mercado.';
             necesidadEditando = null;
             Eco.App.cerrarModal('modal-necesidad');
@@ -211,7 +204,7 @@
                 abrirNecesidad(id);
             } else if (accion === 'estado') {
                 const nuevo = n.estado === 'Activa' ? 'Cerrada' : 'Activa';
-                Eco.DB.ejecutar('UPDATE necesidades_empresa SET estado = ? WHERE id_necesidad = ?', [nuevo, id]);
+                await Eco.Nube.rpc('accion_necesidad', { p_id: id, p_accion: 'estado' });
                 await Eco.App.despuesDeCambio(nuevo === 'Cerrada' ? 'Necesidad cerrada: ya no se muestra en el mercado.' : 'Necesidad publicada de nuevo.');
             } else if (accion === 'eliminar') {
                 const confirmado = await Eco.App.confirmar({
@@ -221,7 +214,7 @@
                     peligro: true
                 });
                 if (!confirmado) return;
-                Eco.DB.ejecutar('DELETE FROM necesidades_empresa WHERE id_necesidad = ?', [id]);
+                await Eco.Nube.rpc('accion_necesidad', { p_id: id, p_accion: 'eliminar' });
                 await Eco.App.despuesDeCambio('Necesidad eliminada.');
             }
         } catch (error) {

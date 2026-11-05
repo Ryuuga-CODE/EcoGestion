@@ -389,11 +389,12 @@
         }
 
         try {
-            Eco.DB.ejecutar(
-                `INSERT INTO ofertas (id_publicacion, id_comprador, cantidad, precio_unitario, mensaje)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [pb.id_publicacion, usuario.id_usuario, cantidad.valor, precio.valor, mensaje || null]
-            );
+            await Eco.Nube.rpc('enviar_oferta', {
+                p_id_publicacion: pb.id_publicacion,
+                p_cantidad: cantidad.valor,
+                p_precio: precio.valor,
+                p_mensaje: mensaje || null
+            });
             Eco.App.cerrarModal('modal-oferta');
             publicacionOferta = null;
             await Eco.App.despuesDeCambio('Oferta enviada. Puedes seguir su estado en "Ofertas".');

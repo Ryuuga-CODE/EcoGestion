@@ -1,144 +1,129 @@
 /* ============================================================
-   EcoGestión · Capa de acceso a SQLite (sql.js)
-   Centraliza la conexión, las consultas parametrizadas, las
-   transacciones y la persistencia del archivo .sqlite.
+   EcoGestión · Réplica SQLite local (sql.js)
+   La base central está en Supabase (PostgreSQL). Después de
+   iniciar sesión, la aplicación descarga lo que tu cuenta puede
+   leer y lo carga en esta réplica SQLite en memoria. Todas las
+   consultas y reportes usan SQL sobre esta réplica.
+   La réplica es de SOLO LECTURA: las escrituras se hacen con las
+   funciones del servidor (Eco.Nube.rpc) y luego se vuelve a
+   sincronizar.
    ============================================================ */
 (function () {
     'use strict';
 
     const Eco = window.Eco = window.Eco || {};
-    const TABLAS_REQUERIDAS = ['materiales', 'usuarios', 'recolecciones', 'movimientos'];
+
+    // Orden de carga (respeta las relaciones entre tablas)
+    const TABLAS_REPLICA = [
+        'roles', 'permisos', 'roles_permisos',
+        'usuarios', 'perfiles',
+        'materiales', 'recolecciones', 'movimientos',
+        'empresas', 'necesidades_empresa',
+        'publicaciones', 'fotos_publicacion', 'ofertas', 'transacciones'
+    ];
 
     let bd = null;
     let SQL = null;
-    let iniciada = false;
+    let ultimaSincronizacion = null;
 
-    function validarInstancia(instancia) {
-        const resultado = instancia.exec("SELECT name FROM sqlite_master WHERE type = 'table'");
-        const nombres = new Set(
-            resultado.length ? resultado[0].values.map((fila) => fila[0]) : []
-        );
-        const faltantes = TABLAS_REQUERIDAS.filter((tabla) => !nombres.has(tabla));
-        if (faltantes.length > 0) {
-            throw new Error('El archivo no contiene las tablas requeridas: ' + faltantes.join(', ') + '.');
-        }
-        const integridad = instancia.exec('PRAGMA integrity_check');
-        if (!integridad.length || integridad[0].values[0][0] !== 'ok') {
-            throw new Error('La verificación de integridad de SQLite no fue satisfactoria.');
-        }
-    }
-
-    /* sql.js reabre la base internamente al exportar y SQLite
-       desactiva las claves foráneas en cada conexión nueva, por eso
-       se vuelven a activar después de cada export(). */
-    function activarClavesForaneas(instancia) {
-        instancia.run('PRAGMA foreign_keys = ON');
-    }
-
-    function exportarBytes() {
-        const bytes = bd.export();
-        activarClavesForaneas(bd);
-        return bytes;
-    }
-
-    function versionEsquema(instancia) {
-        const version = instancia.exec('PRAGMA user_version');
-        return version.length ? Number(version[0].values[0][0]) : 0;
-    }
-
-    /* Actualiza bases creadas con versiones anteriores del esquema.
-       Versión 2: el trigger de stock tolera diferencias de redondeo
-       (por ejemplo 0,7 + 0,1 = 0,7999999...).
-       Versión 3: cuentas, roles, permisos y mercado de residuos
-       (solo agrega tablas; las existentes no se modifican). */
-    function actualizarEsquema(instancia) {
-        if (versionEsquema(instancia) < 2) {
-            instancia.run('DROP TRIGGER IF EXISTS trg_movimiento_stock');
-            instancia.run(Eco.SQL.TRIGGER_STOCK);
-            instancia.run('PRAGMA user_version = 2');
-        }
-        if (versionEsquema(instancia) < 3) {
-            instancia.run('BEGIN TRANSACTION');
-            try {
-                instancia.run(Eco.SQL.ESQUEMA_MERCADO);
-                // Los datos de ejemplo del mercado solo se agregan si aún no hay publicaciones.
-                const publicaciones = instancia.exec('SELECT COUNT(*) FROM publicaciones');
-                if (!Number(publicaciones[0].values[0][0])) {
-                    instancia.run(Eco.SQL.DATOS_MERCADO);
-                }
-                instancia.run('COMMIT');
-            } catch (error) {
-                try { instancia.run('ROLLBACK'); } catch (errorRollback) { /* sin acción */ }
-                throw error;
-            }
-        }
-    }
-
-    function crearBaseDemo() {
+    /** Crea una réplica vacía con el mismo esquema relacional. */
+    function crearReplicaVacia() {
         const nueva = new SQL.Database();
-        nueva.run('PRAGMA foreign_keys = ON');
         nueva.run(Eco.SQL.ESQUEMA);
-        nueva.run(Eco.SQL.DATOS_INICIALES);
         nueva.run(Eco.SQL.ESQUEMA_MERCADO);
-        nueva.run(Eco.SQL.DATOS_MERCADO);
+        // Las reglas (triggers) se aplican en el servidor; en la réplica
+        // solo se copian datos ya validados.
+        const triggers = nueva.exec("SELECT name FROM sqlite_master WHERE type = 'trigger'");
+        if (triggers.length) {
+            triggers[0].values.forEach(([nombre]) => nueva.run(`DROP TRIGGER IF EXISTS "${nombre}"`));
+        }
+        // El catálogo de roles y permisos llega desde el servidor.
+        nueva.run('DELETE FROM roles_permisos; DELETE FROM permisos; DELETE FROM roles;');
+        nueva.run('PRAGMA foreign_keys = OFF');
         return nueva;
     }
 
     async function iniciar() {
-        if (iniciada) return { origen: 'memoria', advertencia: null };
-
+        if (bd) return;
         if (typeof window.initSqlJs !== 'function') {
             throw new Error('No se encontró la biblioteca sql.js. Verifica que exista js/lib/sql-asm.js.');
         }
-
         SQL = await window.initSqlJs();
-        const guardada = await Eco.Almacenamiento.leer();
+        bd = crearReplicaVacia();
+    }
 
-        if (guardada && guardada.bytes && guardada.bytes.length > 0) {
-            let restaurada = null;
-            try {
-                restaurada = new SQL.Database(guardada.bytes);
-                restaurada.run('PRAGMA foreign_keys = ON');
-                validarInstancia(restaurada);
-                actualizarEsquema(restaurada);
-                bd = restaurada;
-                iniciada = true;
-                return {
-                    origen: 'guardada',
-                    backend: guardada.backend,
-                    actualizado: guardada.actualizado,
-                    advertencia: null
-                };
-            } catch (error) {
-                if (restaurada) {
-                    try { restaurada.close(); } catch (errorCierre) { /* sin acción */ }
-                }
-                throw new Error(
-                    'La base guardada en el navegador no se pudo abrir. ' +
-                    'Puedes reintentar o restaurar la base de demostración desde la pantalla de error. Detalle: ' +
-                    error.message
-                );
-            }
-        }
-
-        let advertencia = null;
-        bd = crearBaseDemo();
-        iniciada = true;
-
+    /** Columnas de una tabla de la réplica (se piden solo esas al servidor). */
+    function columnasDe(instancia, tabla) {
+        const sentencia = instancia.prepare(`PRAGMA table_info("${tabla}")`);
+        const lista = [];
         try {
-            await persistir();
-        } catch (error) {
-            advertencia = 'La base funciona en memoria, pero no se pudo guardar automáticamente. ' +
-                'Descarga el archivo .sqlite para no perder los cambios.';
+            while (sentencia.step()) lista.push(sentencia.getAsObject().name);
+        } finally {
+            sentencia.free();
         }
+        return lista;
+    }
 
-        return { origen: 'nueva', backend: Eco.Almacenamiento.obtenerOrigen(), advertencia };
+    function columnas(tabla) {
+        verificarConexion();
+        return columnasDe(bd, tabla);
+    }
+
+    function valorSqlite(valor) {
+        if (valor === undefined || valor === null) return null;
+        if (typeof valor === 'boolean') return valor ? 1 : 0;
+        if (typeof valor === 'object') return JSON.stringify(valor);
+        return valor;
+    }
+
+    /**
+     * Reemplaza la réplica con los datos descargados.
+     * datos = { tabla: [filas] }. Se construye una base nueva y se cambia
+     * al final, así una descarga incompleta no deja la réplica a medias.
+     */
+    function cargarReplica(datos) {
+        const nueva = crearReplicaVacia();
+        let omitidas = 0;
+        nueva.run('BEGIN TRANSACTION');
+        try {
+            TABLAS_REPLICA.forEach((tabla) => {
+                const filas = datos[tabla] || [];
+                if (!filas.length) return;
+                const cols = columnasDe(nueva, tabla).filter((c) => c in filas[0]);
+                const sentencia = nueva.prepare(
+                    `INSERT OR IGNORE INTO "${tabla}" (${cols.map((c) => `"${c}"`).join(', ')})
+                     VALUES (${cols.map(() => '?').join(', ')})`
+                );
+                try {
+                    filas.forEach((fila) => {
+                        sentencia.run(cols.map((c) => valorSqlite(fila[c])));
+                        if (nueva.getRowsModified() === 0) omitidas += 1;
+                    });
+                } finally {
+                    sentencia.free();
+                }
+            });
+            nueva.run('COMMIT');
+        } catch (error) {
+            try { nueva.run('ROLLBACK'); } catch (errorRollback) { /* sin acción */ }
+            nueva.close();
+            throw error;
+        }
+        if (omitidas) console.warn(`Réplica: ${omitidas} filas no cumplieron el esquema local y se omitieron.`);
+        if (bd) bd.close();
+        bd = nueva;
+        ultimaSincronizacion = new Date();
+    }
+
+    function vaciar() {
+        if (!SQL) return;
+        if (bd) bd.close();
+        bd = crearReplicaVacia();
+        ultimaSincronizacion = null;
     }
 
     function verificarConexion() {
-        if (!bd) {
-            throw new Error('La base de datos todavía no está inicializada.');
-        }
+        if (!bd) throw new Error('La base de datos todavía no está inicializada.');
     }
 
     function normalizarParametros(parametros) {
@@ -151,9 +136,7 @@
         const filas = [];
         try {
             sentencia.bind(normalizarParametros(parametros));
-            while (sentencia.step()) {
-                filas.push(sentencia.getAsObject());
-            }
+            while (sentencia.step()) filas.push(sentencia.getAsObject());
         } finally {
             sentencia.free();
         }
@@ -172,105 +155,27 @@
         return claves.length ? fila[claves[0]] : null;
     }
 
-    function ejecutar(sql, parametros) {
-        verificarConexion();
-        bd.run(sql, normalizarParametros(parametros));
-    }
-
-    function ultimoId() {
-        return Number(escalar('SELECT last_insert_rowid() AS id'));
-    }
-
     function contar(sql, parametros) {
         return Number(escalar(sql, parametros) || 0);
     }
 
-    function transaccion(operacion) {
-        verificarConexion();
-        ejecutar('BEGIN IMMEDIATE TRANSACTION');
-        try {
-            const resultado = operacion();
-            ejecutar('COMMIT');
-            return resultado;
-        } catch (error) {
-            try {
-                ejecutar('ROLLBACK');
-            } catch (errorRollback) {
-                // Si el rollback falla, se informa el error original.
-            }
-            throw error;
-        }
-    }
-
+    /** Copia de la réplica como archivo .sqlite (respaldo / consulta externa). */
     function exportar() {
         verificarConexion();
-        return exportarBytes();
-    }
-
-    async function persistir() {
-        verificarConexion();
-        const bytes = exportarBytes();
-        return Eco.Almacenamiento.guardar(bytes);
-    }
-
-    function reemplazarCon(bytes) {
-        if (!SQL) {
-            throw new Error('El motor SQLite no está inicializado.');
-        }
-        if (!bytes || bytes.length === 0) {
-            throw new Error('El archivo seleccionado está vacío.');
-        }
-        let nueva;
-        try {
-            nueva = new SQL.Database(bytes);
-            nueva.run('PRAGMA foreign_keys = ON');
-            validarInstancia(nueva);
-            actualizarEsquema(nueva);
-        } catch (error) {
-            if (nueva) {
-                try { nueva.close(); } catch (errorCierre) { /* sin acción */ }
-            }
-            throw new Error('El archivo no es una base de datos SQLite válida de EcoGestión. ' + error.message);
-        }
-        if (bd) {
-            try { bd.close(); } catch (errorCierre) { /* sin acción */ }
-        }
-        bd = nueva;
-        iniciada = true;
-    }
-
-    function restaurarDemo() {
-        if (!SQL) {
-            throw new Error('El motor SQLite no está inicializado.');
-        }
-        if (bd) {
-            try { bd.close(); } catch (errorCierre) { /* sin acción */ }
-        }
-        bd = crearBaseDemo();
-        iniciada = true;
-    }
-
-    function cerrar() {
-        if (bd) {
-            bd.close();
-            bd = null;
-        }
-        iniciada = false;
+        return bd.export();
     }
 
     Eco.DB = {
+        TABLAS_REPLICA,
         iniciar,
+        columnas,
+        cargarReplica,
+        vaciar,
         consultar,
         consultarUno,
         escalar,
-        ejecutar,
-        ultimoId,
         contar,
-        transaccion,
         exportar,
-        persistir,
-        reemplazarCon,
-        restaurarDemo,
-        cerrar
+        ultimaSincronizacion: () => ultimaSincronizacion
     };
 })();

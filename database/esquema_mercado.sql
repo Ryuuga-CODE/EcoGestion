@@ -7,8 +7,10 @@
 -- recolecciones, movimientos); solo agrega tablas nuevas que se
 -- relacionan con ellas.
 --
--- La aplicación incluye una copia embebida en js/datos_sql.js.
--- Al abrir una base de la versión 2, se aplica automáticamente.
+-- Desde la versión 4 este esquema SQLite se usa para la RÉPLICA
+-- local (sql.js) de cada navegador; la base central está en
+-- Supabase (supabase/esquema_supabase.sql). Copia embebida en
+-- js/datos_sql.js.
 -- ============================================================
 
 PRAGMA foreign_keys = ON;
@@ -138,11 +140,11 @@ CREATE TABLE IF NOT EXISTS publicaciones (
         CHECK (unidad <> 'unidades' OR cantidad_disponible = CAST(cantidad_disponible AS INTEGER))
 );
 
--- Fotografías de cada publicación (hasta 3, guardadas dentro de la base)
+-- Fotografías de cada publicación (hasta 3; URL de Supabase Storage)
 CREATE TABLE IF NOT EXISTS fotos_publicacion (
     id_foto         INTEGER PRIMARY KEY AUTOINCREMENT,
     id_publicacion  INTEGER NOT NULL,
-    imagen          TEXT NOT NULL CHECK (imagen LIKE 'data:image/%'),
+    imagen          TEXT NOT NULL CHECK (imagen LIKE 'https://%' OR imagen LIKE 'http://%'),
     orden           INTEGER NOT NULL CHECK (orden BETWEEN 1 AND 3),
     UNIQUE (id_publicacion, orden),
     CONSTRAINT fk_foto_publicacion

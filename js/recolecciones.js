@@ -223,28 +223,13 @@
         guardando = true;
         boton.disabled = true;
         try {
-            Eco.DB.transaccion(() => {
-                Eco.DB.ejecutar(
-                    `INSERT INTO recolecciones
-                        (id_material, id_usuario, cantidad, unidad_medida, fecha, observaciones)
-                     VALUES (?, ?, ?, ?, ?, ?)`,
-                    [datos.idMaterial, datos.idUsuario, datos.cantidad, datos.unidad, datos.fecha, datos.observaciones]
-                );
-                const idRecoleccion = Eco.DB.ultimoId();
-                Eco.DB.ejecutar(
-                    `INSERT INTO movimientos
-                        (id_material, id_recoleccion, id_usuario, tipo, cantidad, unidad_medida, fecha, observaciones)
-                     VALUES (?, ?, ?, 'Entrada', ?, ?, ?, ?)`,
-                    [
-                        datos.idMaterial,
-                        idRecoleccion,
-                        datos.idUsuario,
-                        datos.cantidad,
-                        datos.unidad,
-                        datos.fecha,
-                        datos.observaciones
-                    ]
-                );
+            // Recolección + movimiento de entrada en una sola transacción del servidor
+            await Eco.Nube.rpc('registrar_recoleccion', {
+                p_id_material: datos.idMaterial,
+                p_id_responsable: datos.idUsuario,
+                p_cantidad: datos.cantidad,
+                p_fecha: datos.fecha,
+                p_observaciones: datos.observaciones
             });
 
             Eco.App.cerrarModal('modal-recoleccion');

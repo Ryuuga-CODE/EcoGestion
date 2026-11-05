@@ -1,7 +1,7 @@
 /* ============================================================
    EcoGestión · Publicaciones del vendedor
    Crear, editar, retirar, reactivar y eliminar publicaciones
-   propias, con hasta 3 fotografías guardadas en la base SQLite.
+   propias, con hasta 3 fotografías (Supabase Storage).
    ============================================================ */
 (function () {
     'use strict';
@@ -273,42 +273,30 @@
         guardando = true;
         document.getElementById('btn-guardar-publicacion').disabled = true;
         try {
-            // Publicación y fotos se guardan juntas: o se guarda todo o nada.
-            Eco.DB.transaccion(() => {
-                let id = editando;
-                if (editando) {
-                    const actual = obtenerPropia(editando);
-                    if (!actual) throw new Error('No se encontró la publicación.');
-                    const unidad = actual.total_ofertas > 0 ? actual.unidad : datos.unidad;
-                    if (unidad === 'unidades' && !Number.isInteger(datos.cantidad)) {
-                        throw new Error('Para unidades, la cantidad debe ser un número entero.');
-                    }
-                    let estado = actual.estado;
-                    if (estado !== 'Retirada') estado = datos.cantidad > 0 ? 'Activa' : 'Agotada';
-                    Eco.DB.ejecutar(
-                        `UPDATE publicaciones
-                         SET tipo_residuo = ?, nombre_material = ?, descripcion = ?, cantidad_disponible = ?,
-                             unidad = ?, precio_unitario = ?, ubicacion = ?, estado = ?,
-                             fecha_actualizacion = datetime('now', 'localtime')
-                         WHERE id_publicacion = ? AND id_vendedor = ?`,
-                        [datos.tipo, datos.nombre, datos.descripcion || null, datos.cantidad, unidad,
-                            datos.precio, datos.ubicacion, estado, editando, usuario.id_usuario]
-                    );
-                    Eco.DB.ejecutar('DELETE FROM fotos_publicacion WHERE id_publicacion = ?', [editando]);
+            if (editando && !obtenerPropia(editando)) throw new Error('No se encontró la publicación.');
+            // 1) Las fotos nuevas se suben a Supabase Storage; las existentes ya son URL.
+            const boton = document.getElementById('btn-guardar-publicacion');
+            const urls = [];
+            for (let i = 0; i < fotos.length; i += 1) {
+                if (fotos[i].startsWith('data:')) {
+                    boton.textContent = `Subiendo foto ${i + 1} de ${fotos.length}…`;
+                    urls.push(await Eco.Nube.subirFoto(fotos[i]));
                 } else {
-                    Eco.DB.ejecutar(
-                        `INSERT INTO publicaciones (id_vendedor, tipo_residuo, nombre_material, descripcion,
-                             cantidad_disponible, unidad, precio_unitario, ubicacion)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [usuario.id_usuario, datos.tipo, datos.nombre, datos.descripcion || null,
-                            datos.cantidad, datos.unidad, datos.precio, datos.ubicacion]
-                    );
-                    id = Eco.DB.ultimoId();
+                    urls.push(fotos[i]);
                 }
-                fotos.forEach((foto, i) => {
-                    Eco.DB.ejecutar('INSERT INTO fotos_publicacion (id_publicacion, imagen, orden) VALUES (?, ?, ?)',
-                        [id, foto, i + 1]);
-                });
+            }
+            boton.textContent = 'Guardando…';
+            // 2) Publicación y fotos se guardan juntas en una transacción del servidor.
+            await Eco.Nube.rpc('guardar_publicacion', {
+                p_id: editando || null,
+                p_tipo: datos.tipo,
+                p_nombre: datos.nombre,
+                p_descripcion: datos.descripcion || null,
+                p_cantidad: datos.cantidad,
+                p_unidad: datos.unidad,
+                p_precio: datos.precio,
+                p_ubicacion: datos.ubicacion,
+                p_fotos: urls
             });
             const mensaje = editando ? 'Publicación actualizada.' : 'Material publicado en el mercado.';
             editando = null;
@@ -319,7 +307,9 @@
             Eco.Util.mostrarAviso(Eco.Util.mensajeError(error, 'No se pudo guardar la publicación.'), 'error');
         } finally {
             guardando = false;
-            document.getElementById('btn-guardar-publicacion').disabled = false;
+            const boton = document.getElementById('btn-guardar-publicacion');
+            boton.disabled = false;
+            boton.innerHTML = '<svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg> Guardar publicación';
         }
     }
 
@@ -339,14 +329,8 @@
         });
         if (!confirmado) return;
         try {
-            Eco.DB.transaccion(() => {
-                Eco.DB.ejecutar(
-                    "UPDATE ofertas SET estado = 'Rechazada', fecha_respuesta = datetime('now', 'localtime') WHERE id_publicacion = ? AND estado = 'Pendiente'",
-                    [id]);
-                Eco.DB.ejecutar(
-                    "UPDATE publicaciones SET estado = 'Retirada', fecha_actualizacion = datetime('now', 'localtime') WHERE id_publicacion = ?",
-                    [id]);
-            });
+            // También rechaza en el servidor las ofertas pendientes de esta publicación
+            await Eco.Nube.rpc('cambiar_estado_publicacion', { p_id: id, p_accion: 'retirar' });
             await Eco.App.despuesDeCambio('Publicación retirada del mercado.');
         } catch (error) {
             Eco.Util.mostrarAviso(Eco.Util.mensajeError(error, 'No se pudo retirar la publicación.'), 'error');
@@ -357,10 +341,7 @@
         const pb = obtenerPropia(id);
         if (!pb) return;
         try {
-            Eco.DB.ejecutar(
-                `UPDATE publicaciones SET estado = CASE WHEN cantidad_disponible > 0 THEN 'Activa' ELSE 'Agotada' END,
-                        fecha_actualizacion = datetime('now', 'localtime')
-                 WHERE id_publicacion = ?`, [id]);
+            await Eco.Nube.rpc('cambiar_estado_publicacion', { p_id: id, p_accion: 'reactivar' });
             await Eco.App.despuesDeCambio(pb.cantidad_disponible > 0
                 ? 'Publicación visible de nuevo en el mercado.'
                 : 'Publicación reactivada como agotada. Edita la cantidad para volver a ofrecerla.');
@@ -384,7 +365,7 @@
         });
         if (!confirmado) return;
         try {
-            Eco.DB.ejecutar('DELETE FROM publicaciones WHERE id_publicacion = ?', [id]);
+            await Eco.Nube.rpc('eliminar_publicacion', { p_id: id });
             await Eco.App.despuesDeCambio('Publicación eliminada.');
         } catch (error) {
             Eco.Util.mostrarAviso(Eco.Util.mensajeError(error, 'No se pudo eliminar la publicación.'), 'error');

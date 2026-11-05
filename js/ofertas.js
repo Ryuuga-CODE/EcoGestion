@@ -5,8 +5,9 @@
    - Comprador / empresa: ofertas enviadas (cancelar) e
      historial de compras.
    Aceptar, cancelar una oferta aceptada y completar se ejecutan
-   como transacciones SQLite: se actualizan la oferta, la
-   publicación y la transacción a la vez, o no se cambia nada.
+   en el servidor (función responder_oferta) como una transacción:
+   se actualizan la oferta, la publicación y la transacción a la
+   vez, o no se cambia nada.
    ============================================================ */
 (function () {
     'use strict';
@@ -240,29 +241,9 @@
         });
         if (!confirmado) return;
 
-        Eco.DB.transaccion(() => {
-            // Se vuelve a leer dentro de la transacción para evitar vender más de lo disponible.
-            const actual = Eco.DB.consultarUno(
-                `SELECT o.estado, o.cantidad, pb.cantidad_disponible, pb.estado AS estado_publicacion
-                 FROM ofertas o JOIN publicaciones pb ON pb.id_publicacion = o.id_publicacion
-                 WHERE o.id_oferta = ?`, [id]);
-            if (!actual || actual.estado !== 'Pendiente') throw new Error('La oferta ya no está pendiente.');
-            if (actual.estado_publicacion === 'Retirada') throw new Error('La publicación fue retirada del mercado.');
-            if (actual.cantidad > actual.cantidad_disponible + 0.000001) {
-                throw new Error(`La cantidad solicitada supera lo disponible (${MU().cantidad(actual.cantidad_disponible, oferta.unidad)}). Rechaza la oferta o actualiza la publicación.`);
-            }
-            Eco.DB.ejecutar(
-                `UPDATE publicaciones
-                 SET cantidad_disponible = ROUND(cantidad_disponible - ?, 2),
-                     estado = CASE WHEN ROUND(cantidad_disponible - ?, 2) <= 0 THEN 'Agotada' ELSE estado END,
-                     fecha_actualizacion = datetime('now', 'localtime')
-                 WHERE id_publicacion = ?`,
-                [actual.cantidad, actual.cantidad, oferta.id_publicacion]);
-            Eco.DB.ejecutar(
-                "UPDATE ofertas SET estado = 'Aceptada', fecha_respuesta = datetime('now', 'localtime') WHERE id_oferta = ?",
-                [id]);
-            Eco.DB.ejecutar('INSERT INTO transacciones (id_oferta) VALUES (?)', [id]);
-        });
+        // El servidor vuelve a comprobar todo y, en una sola transacción, descuenta la
+        // cantidad de la publicación, acepta la oferta y registra la transacción.
+        await Eco.Nube.rpc('responder_oferta', { p_id: id, p_accion: 'aceptar' });
         await Eco.App.despuesDeCambio('Oferta aceptada. La operación quedó registrada y la cantidad se descontó.');
     }
 
@@ -277,9 +258,7 @@
             peligro: true
         });
         if (!confirmado) return;
-        Eco.DB.ejecutar(
-            "UPDATE ofertas SET estado = 'Rechazada', fecha_respuesta = datetime('now', 'localtime') WHERE id_oferta = ? AND estado = 'Pendiente'",
-            [id]);
+        await Eco.Nube.rpc('responder_oferta', { p_id: id, p_accion: 'rechazar' });
         await Eco.App.despuesDeCambio('Oferta rechazada.');
     }
 
@@ -303,30 +282,8 @@
         });
         if (!confirmado) return;
 
-        Eco.DB.transaccion(() => {
-            const actual = Eco.DB.consultarUno('SELECT estado FROM ofertas WHERE id_oferta = ?', [id]);
-            if (!actual || !['Pendiente', 'Aceptada'].includes(actual.estado)) {
-                throw new Error('La oferta ya no se puede cancelar.');
-            }
-            if (actual.estado === 'Aceptada') {
-                // Se devuelve la cantidad a la publicación
-                Eco.DB.ejecutar(
-                    `UPDATE publicaciones
-                     SET cantidad_disponible = ROUND(cantidad_disponible + ?, 2),
-                         estado = CASE WHEN estado = 'Agotada' THEN 'Activa' ELSE estado END,
-                         fecha_actualizacion = datetime('now', 'localtime')
-                     WHERE id_publicacion = ?`,
-                    [oferta.cantidad, oferta.id_publicacion]);
-                Eco.DB.ejecutar(
-                    "UPDATE transacciones SET estado = 'Cancelada', fecha_cierre = datetime('now', 'localtime') WHERE id_oferta = ?",
-                    [id]);
-                Eco.DB.ejecutar("UPDATE ofertas SET estado = 'Cancelada' WHERE id_oferta = ?", [id]);
-            } else {
-                Eco.DB.ejecutar(
-                    "UPDATE ofertas SET estado = 'Cancelada', fecha_respuesta = datetime('now', 'localtime') WHERE id_oferta = ?",
-                    [id]);
-            }
-        });
+        // Si estaba aceptada, el servidor devuelve la cantidad a la publicación.
+        await Eco.Nube.rpc('responder_oferta', { p_id: id, p_accion: 'cancelar' });
         await Eco.App.despuesDeCambio(aceptada ? 'Negociación cancelada. La cantidad volvió a la publicación.' : 'Oferta cancelada.');
     }
 
@@ -341,12 +298,7 @@
             peligro: false
         });
         if (!confirmado) return;
-        Eco.DB.transaccion(() => {
-            Eco.DB.ejecutar("UPDATE ofertas SET estado = 'Completada' WHERE id_oferta = ? AND estado = 'Aceptada'", [id]);
-            Eco.DB.ejecutar(
-                "UPDATE transacciones SET estado = 'Completada', fecha_cierre = datetime('now', 'localtime') WHERE id_oferta = ? AND estado = 'En curso'",
-                [id]);
-        });
+        await Eco.Nube.rpc('responder_oferta', { p_id: id, p_accion: 'completar' });
         await Eco.App.despuesDeCambio('Operación completada y registrada en el historial de ventas.');
     }
 

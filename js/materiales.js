@@ -206,20 +206,13 @@
         guardando = true;
         boton.disabled = true;
         try {
-            if (materialEditando) {
-                Eco.DB.ejecutar(
-                    `UPDATE materiales
-                     SET nombre = ?, categoria = ?, unidad_medida = ?, descripcion = ?
-                     WHERE id_material = ?`,
-                    [datos.nombre, datos.categoria, datos.unidad, datos.descripcion, materialEditando]
-                );
-            } else {
-                Eco.DB.ejecutar(
-                    `INSERT INTO materiales (nombre, categoria, unidad_medida, descripcion)
-                     VALUES (?, ?, ?, ?)`,
-                    [datos.nombre, datos.categoria, datos.unidad, datos.descripcion]
-                );
-            }
+            await Eco.Nube.rpc('guardar_material', {
+                p_id: materialEditando || null,
+                p_nombre: datos.nombre,
+                p_categoria: datos.categoria,
+                p_unidad: datos.unidad,
+                p_descripcion: datos.descripcion
+            });
             materialEditando = null;
             Eco.App.cerrarModal('modal-material');
             await Eco.App.despuesDeCambio(
@@ -273,7 +266,7 @@
         if (!confirmado) return;
 
         try {
-            Eco.DB.ejecutar('DELETE FROM materiales WHERE id_material = ?', [id]);
+            await Eco.Nube.rpc('eliminar_material', { p_id: id });
             await Eco.App.despuesDeCambio('Material eliminado del catálogo.');
         } catch (error) {
             Eco.Util.mostrarAviso(
