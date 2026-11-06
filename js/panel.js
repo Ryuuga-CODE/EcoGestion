@@ -19,7 +19,29 @@
         `).join('');
     }
 
+    /** Tareas pendientes del municipio: lo que el administrador debe atender hoy. */
+    function renderMunicipio() {
+        const usuario = Eco.Sesion.usuarioActual();
+        const esc = Eco.Util.escaparHtml;
+        const sinAsignar = Eco.DB.contar("SELECT COUNT(*) FROM solicitudes_recoleccion WHERE estado = 'Pendiente'");
+        const porAprobar = Eco.DB.contar('SELECT COUNT(*) FROM perfiles WHERE pendiente = 1');
+        const pedidos = Eco.DB.contar("SELECT COUNT(*) FROM pedidos_empresa WHERE estado IN ('Pendiente', 'Aprobado')");
+        const tarjeta = (valor, titulo, detalle, vista, icono) => `
+            <button type="button" class="pendiente-municipio${valor ? ' con-pendientes' : ''}" data-ir="${vista}">
+                <span class="kpi-icono"><svg class="icono" aria-hidden="true"><use href="#${icono}"></use></svg></span>
+                <span><strong>${Eco.Util.formatearNumero(valor)}</strong> ${esc(titulo)}<small>${esc(detalle)}</small></span>
+            </button>`;
+        document.getElementById('panel-municipio').innerHTML =
+            tarjeta(sinAsignar, sinAsignar === 1 ? 'solicitud sin asignar' : 'solicitudes sin asignar', 'Asígnalas a un repartidor', 'solicitudes', 'i-camion') +
+            tarjeta(porAprobar, porAprobar === 1 ? 'repartidor por aprobar' : 'repartidores por aprobar', 'Revisa las cuentas nuevas', 'administracion', 'i-usuarios') +
+            tarjeta(pedidos, pedidos === 1 ? 'pedido de empresa abierto' : 'pedidos de empresas abiertos', 'Responde o registra la entrega', 'pedidos', 'i-empresa');
+        if (usuario) {
+            document.getElementById('bienvenida-titulo').textContent = `Centro de acopio de ${Eco.Lugares.nombre(usuario.codigo_municipio)}`;
+        }
+    }
+
     function render() {
+        renderMunicipio();
         const totalMateriales = Eco.DB.contar('SELECT COUNT(*) AS total FROM materiales');
         const totalRecolecciones = Eco.DB.contar('SELECT COUNT(*) AS total FROM recolecciones');
         const ultimaRecoleccion = Eco.DB.escalar('SELECT MAX(fecha) AS ultima FROM recolecciones');
@@ -153,6 +175,10 @@
     }
 
     function init() {
+        document.getElementById('panel-municipio').addEventListener('click', (evento) => {
+            const boton = evento.target.closest('[data-ir]');
+            if (boton) Eco.App.irA(boton.dataset.ir);
+        });
         document.getElementById('btn-ver-historial').addEventListener('click', () => {
             Eco.App.irA('historial');
         });

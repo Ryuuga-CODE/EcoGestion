@@ -1667,6 +1667,7 @@ tbody tr:hover {
 .campo input,
 .campo select,
 .campo textarea,
+.linea-material input,
 select,
 input[type="date"],
 input[type="search"] {
@@ -1695,7 +1696,9 @@ input[type="search"] {
 
 .campo input:focus,
 .campo select:focus,
-.campo textarea:focus {
+.campo textarea:focus,
+.linea-material input:focus,
+.linea-material select:focus {
     border-color: var(--verde-500);
     outline: none;
     background: var(--blanco);

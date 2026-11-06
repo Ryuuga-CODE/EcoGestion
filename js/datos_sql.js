@@ -1,6 +1,6 @@
 /* ============================================================
    EcoGestión · Esquema de la réplica SQLite (copia embebida)
-   Copia de database/esquema.sql y database/esquema_mercado.sql.
+   Copia de database/esquema.sql y database/esquema_municipal.sql.
    Se usa para crear la réplica local (sql.js) donde se cargan
    los datos que vienen de Supabase. Está embebida porque el
    navegador no deja leer archivos .sql con fetch() desde file://.
@@ -12,17 +12,19 @@
     Eco.SQL = {
         ESQUEMA: `-- ============================================================
 -- EcoGestión · Sistema de Gestión de Residuos Aprovechables
--- Esquema relacional para SQLite
+-- Réplica SQLite: centro de acopio del municipio
 -- ============================================================
--- Este script se ejecuta al crear una base nueva. La aplicación
--- incluye una copia embebida del mismo en js/datos_sql.js para
--- poder funcionar al abrir index.html directamente (file://).
+-- La base central está en Supabase (supabase/esquema_supabase.sql).
+-- Cada navegador crea con este esquema una réplica SQLite en
+-- memoria (sql.js) y la llena con lo que su cuenta puede leer.
+-- La réplica solo trae datos del municipio de la cuenta.
+-- Copia embebida en js/datos_sql.js (node herramientas/generar_datos_sql.js).
 -- ============================================================
 
 PRAGMA foreign_keys = ON;
 
 -- ------------------------------------------------------------
--- Usuarios responsables de las recolecciones
+-- Usuarios (nombre y correo de Google)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario     INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,40 +37,46 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 -- ------------------------------------------------------------
--- Catálogo de materiales aprovechables
+-- Catálogo de materiales del centro de acopio
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS materiales (
-    id_material     INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre          TEXT NOT NULL COLLATE NOCASE UNIQUE,
-    categoria       TEXT NOT NULL
-                    CHECK (categoria IN ('Plástico', 'Papel y cartón', 'Vidrio', 'Metal', 'Otros')),
-    unidad_medida   TEXT NOT NULL
-                    CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
-    descripcion     TEXT,
-    fecha_registro  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    id_material       INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_municipio  TEXT NOT NULL,
+    nombre            TEXT NOT NULL COLLATE NOCASE,
+    categoria         TEXT NOT NULL
+                      CHECK (categoria IN ('Plástico', 'Papel y cartón', 'Vidrio', 'Metal', 'Otros')),
+    unidad_medida     TEXT NOT NULL
+                      CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
+    descripcion       TEXT,
+    fecha_registro    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    UNIQUE (codigo_municipio, nombre),
     CHECK (length(trim(nombre)) BETWEEN 2 AND 80)
 );
 
 -- ------------------------------------------------------------
--- Recolecciones realizadas
--- La unidad se copia del material y un trigger verifica que
--- coincida con la unidad configurada en el catálogo.
+-- Recolecciones: material que entra al centro de acopio.
+-- id_solicitud indica de qué solicitud ciudadana salió (si aplica).
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS recolecciones (
-    id_recoleccion  INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_material     INTEGER NOT NULL,
-    id_usuario      INTEGER NOT NULL,
-    cantidad        REAL NOT NULL CHECK (cantidad > 0),
-    unidad_medida   TEXT NOT NULL
-                    CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
-    fecha           TEXT NOT NULL,
-    observaciones   TEXT,
-    fecha_registro  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    id_recoleccion    INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_municipio  TEXT NOT NULL,
+    id_material       INTEGER NOT NULL,
+    id_usuario        INTEGER NOT NULL,
+    id_solicitud      INTEGER,
+    cantidad          REAL NOT NULL CHECK (cantidad > 0),
+    unidad_medida     TEXT NOT NULL
+                      CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
+    fecha             TEXT NOT NULL,
+    observaciones     TEXT,
+    fecha_registro    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     CONSTRAINT fk_recoleccion_material
         FOREIGN KEY (id_material) REFERENCES materiales (id_material)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_recoleccion_usuario
         FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_recoleccion_solicitud
+        FOREIGN KEY (id_solicitud) REFERENCES solicitudes_recoleccion (id_solicitud)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT chk_recoleccion_fecha
         CHECK (fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
@@ -78,34 +86,38 @@ CREATE TABLE IF NOT EXISTS recolecciones (
 );
 
 -- ------------------------------------------------------------
--- Movimientos de inventario.
--- Entrada: generada automáticamente por una recolección.
--- Salida: retiro/entrega de material (descuenta existencias).
--- El inventario SIEMPRE se calcula desde esta tabla.
+-- Movimientos de inventario. El inventario SIEMPRE se calcula desde aquí.
+-- Entrada: generada por una recolección.
+-- Salida: entrega a una empresa (id_pedido) o retiro manual.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS movimientos (
-    id_movimiento   INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_material     INTEGER NOT NULL,
-    id_recoleccion  INTEGER UNIQUE,
-    id_usuario      INTEGER NOT NULL,
-    tipo            TEXT NOT NULL CHECK (tipo IN ('Entrada', 'Salida')),
-    cantidad        REAL NOT NULL CHECK (cantidad > 0),
-    unidad_medida   TEXT NOT NULL
-                    CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
-    fecha           TEXT NOT NULL,
-    observaciones   TEXT,
-    fecha_registro  TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    id_movimiento     INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_municipio  TEXT NOT NULL,
+    id_material       INTEGER NOT NULL,
+    id_recoleccion    INTEGER UNIQUE,
+    id_pedido         INTEGER UNIQUE,
+    id_usuario        INTEGER NOT NULL,
+    tipo              TEXT NOT NULL CHECK (tipo IN ('Entrada', 'Salida')),
+    cantidad          REAL NOT NULL CHECK (cantidad > 0),
+    unidad_medida     TEXT NOT NULL
+                      CHECK (unidad_medida IN ('kg', 'unidades', 'litros')),
+    fecha             TEXT NOT NULL,
+    observaciones     TEXT,
+    fecha_registro    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     CONSTRAINT fk_movimiento_material
         FOREIGN KEY (id_material) REFERENCES materiales (id_material)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_movimiento_recoleccion
         FOREIGN KEY (id_recoleccion) REFERENCES recolecciones (id_recoleccion)
         ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_movimiento_pedido
+        FOREIGN KEY (id_pedido) REFERENCES pedidos_empresa (id_pedido)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_movimiento_usuario
         FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT chk_movimiento_origen
-        CHECK ((tipo = 'Entrada' AND id_recoleccion IS NOT NULL)
+        CHECK ((tipo = 'Entrada' AND id_recoleccion IS NOT NULL AND id_pedido IS NULL)
             OR (tipo = 'Salida'  AND id_recoleccion IS NULL)),
     CONSTRAINT chk_movimiento_fecha
         CHECK (fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
@@ -117,90 +129,13 @@ CREATE TABLE IF NOT EXISTS movimientos (
 -- ------------------------------------------------------------
 -- Índices para consultas y reportes
 -- ------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_materiales_categoria
-    ON materiales (categoria);
-
-CREATE INDEX IF NOT EXISTS idx_recolecciones_fecha
-    ON recolecciones (fecha);
-
-CREATE INDEX IF NOT EXISTS idx_recolecciones_material
-    ON recolecciones (id_material);
-
-CREATE INDEX IF NOT EXISTS idx_movimientos_material
-    ON movimientos (id_material);
-
-CREATE INDEX IF NOT EXISTS idx_movimientos_fecha
-    ON movimientos (fecha);
-
-CREATE INDEX IF NOT EXISTS idx_movimientos_tipo
-    ON movimientos (tipo);
-
--- ------------------------------------------------------------
--- Validaciones de integridad adicionales
--- ------------------------------------------------------------
-
--- La unidad de la recolección debe coincidir con la del material.
-CREATE TRIGGER IF NOT EXISTS trg_recoleccion_unidad
-BEFORE INSERT ON recolecciones
-FOR EACH ROW
-WHEN NEW.unidad_medida <> (
-    SELECT unidad_medida FROM materiales WHERE id_material = NEW.id_material
-)
-BEGIN
-    SELECT RAISE(ABORT, 'La unidad de medida no coincide con la del material.');
-END;
-
-CREATE TRIGGER IF NOT EXISTS trg_recoleccion_unidad_update
-BEFORE UPDATE OF id_material, unidad_medida ON recolecciones
-FOR EACH ROW
-WHEN NEW.unidad_medida <> (
-    SELECT unidad_medida FROM materiales WHERE id_material = NEW.id_material
-)
-BEGIN
-    SELECT RAISE(ABORT, 'La unidad de medida no coincide con la del material.');
-END;
-
--- La unidad de cualquier movimiento debe coincidir con la del material.
-CREATE TRIGGER IF NOT EXISTS trg_movimiento_unidad
-BEFORE INSERT ON movimientos
-FOR EACH ROW
-WHEN NEW.unidad_medida <> (
-    SELECT unidad_medida FROM materiales WHERE id_material = NEW.id_material
-)
-BEGIN
-    SELECT RAISE(ABORT, 'La unidad de medida no coincide con la del material.');
-END;
-
--- Una entrada debe corresponder exactamente a una recolección registrada.
-CREATE TRIGGER IF NOT EXISTS trg_movimiento_entrada
-BEFORE INSERT ON movimientos
-FOR EACH ROW
-WHEN NEW.tipo = 'Entrada' AND NOT EXISTS (
-    SELECT 1
-    FROM recolecciones r
-    WHERE r.id_recoleccion = NEW.id_recoleccion
-      AND r.id_material = NEW.id_material
-      AND r.id_usuario = NEW.id_usuario
-      AND r.cantidad = NEW.cantidad
-      AND r.unidad_medida = NEW.unidad_medida
-      AND r.fecha = NEW.fecha
-)
-BEGIN
-    SELECT RAISE(ABORT, 'La entrada no coincide con una recolección registrada.');
-END;
-
--- No se puede retirar más material del disponible.
-CREATE TRIGGER IF NOT EXISTS trg_movimiento_stock
-BEFORE INSERT ON movimientos
-FOR EACH ROW
-WHEN NEW.tipo = 'Salida' AND NEW.cantidad > COALESCE((
-    SELECT SUM(CASE WHEN tipo = 'Entrada' THEN cantidad ELSE -cantidad END)
-    FROM movimientos
-    WHERE id_material = NEW.id_material
-), 0) + 0.000001
-BEGIN
-    SELECT RAISE(ABORT, 'Stock insuficiente para registrar la salida.');
-END;
+CREATE INDEX IF NOT EXISTS idx_materiales_categoria   ON materiales (categoria);
+CREATE INDEX IF NOT EXISTS idx_recolecciones_fecha    ON recolecciones (fecha);
+CREATE INDEX IF NOT EXISTS idx_recolecciones_material ON recolecciones (id_material);
+CREATE INDEX IF NOT EXISTS idx_recolecciones_solicitud ON recolecciones (id_solicitud);
+CREATE INDEX IF NOT EXISTS idx_movimientos_material   ON movimientos (id_material);
+CREATE INDEX IF NOT EXISTS idx_movimientos_fecha      ON movimientos (fecha);
+CREATE INDEX IF NOT EXISTS idx_movimientos_tipo       ON movimientos (tipo);
 
 -- ------------------------------------------------------------
 -- Vista de existencias: calculada desde los movimientos
@@ -231,22 +166,17 @@ FROM materiales m
 LEFT JOIN movimientos mv ON mv.id_material = m.id_material
 GROUP BY m.id_material;
 
-PRAGMA user_version = 2;
+PRAGMA user_version = 5;
 `,
 
-        ESQUEMA_MERCADO: `-- ============================================================
--- EcoGestión · Ampliación: cuentas, roles y mercado de residuos
--- Versión del esquema: 3
+        ESQUEMA_MUNICIPAL: `-- ============================================================
+-- EcoGestión · Réplica SQLite: cuentas, solicitudes y pedidos
+-- Versión del esquema: 5 (gestión municipal)
 -- ============================================================
--- Este script AMPLÍA la base creada por esquema.sql. No elimina ni
--- modifica las tablas existentes (usuarios, materiales,
--- recolecciones, movimientos); solo agrega tablas nuevas que se
--- relacionan con ellas.
---
--- Desde la versión 4 este esquema SQLite se usa para la RÉPLICA
--- local (sql.js) de cada navegador; la base central está en
--- Supabase (supabase/esquema_supabase.sql). Copia embebida en
--- js/datos_sql.js.
+-- Complementa a esquema.sql. Las reglas de negocio (permisos,
+-- estados, stock) se validan en Supabase; aquí solo se guardan
+-- copias de datos ya validados para consultarlos con SQL.
+-- Copia embebida en js/datos_sql.js.
 -- ============================================================
 
 PRAGMA foreign_keys = ON;
@@ -257,7 +187,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS roles (
     id_rol       INTEGER PRIMARY KEY AUTOINCREMENT,
     codigo       TEXT NOT NULL UNIQUE
-                 CHECK (codigo IN ('administrador', 'vendedor', 'comprador', 'empresa')),
+                 CHECK (codigo IN ('administrador', 'ciudadano', 'repartidor', 'empresa')),
     nombre       TEXT NOT NULL UNIQUE,
     descripcion  TEXT NOT NULL
 );
@@ -272,299 +202,129 @@ CREATE TABLE IF NOT EXISTS roles_permisos (
     id_rol       INTEGER NOT NULL,
     id_permiso   INTEGER NOT NULL,
     PRIMARY KEY (id_rol, id_permiso),
-    CONSTRAINT fk_rp_rol
-        FOREIGN KEY (id_rol) REFERENCES roles (id_rol)
+    CONSTRAINT fk_rp_rol FOREIGN KEY (id_rol) REFERENCES roles (id_rol)
         ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT fk_rp_permiso
-        FOREIGN KEY (id_permiso) REFERENCES permisos (id_permiso)
+    CONSTRAINT fk_rp_permiso FOREIGN KEY (id_permiso) REFERENCES permisos (id_permiso)
         ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 -- ------------------------------------------------------------
--- Perfiles: amplía la tabla usuarios (relación 1 a 1).
--- El nombre y el correo siguen en usuarios; aquí solo va lo nuevo.
--- usuarios.rol conserva su significado original (rol en la
--- operación del centro de acopio); perfiles.id_rol es el tipo de
--- cuenta en la plataforma.
+-- Perfiles: amplía usuarios (1 a 1) con el tipo de cuenta y el
+-- municipio (código DANE de 5 dígitos; el nombre está en js/lugares.js).
+-- pendiente = 1: repartidor que espera aprobación del administrador.
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS perfiles (
-    id_usuario       INTEGER PRIMARY KEY,
-    id_rol           INTEGER NOT NULL,
-    google_sub       TEXT UNIQUE,
-    foto_url         TEXT,
-    telefono         TEXT CHECK (telefono IS NULL OR length(telefono) <= 30),
-    ubicacion        TEXT CHECK (ubicacion IS NULL OR length(ubicacion) <= 120),
-    activo           INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
-    metodo_registro  TEXT NOT NULL CHECK (metodo_registro IN ('google', 'demo')),
-    fecha_creacion   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    ultimo_acceso    TEXT,
-    CONSTRAINT fk_perfil_usuario
-        FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
+    id_usuario        INTEGER PRIMARY KEY,
+    id_rol            INTEGER NOT NULL,
+    codigo_municipio  TEXT NOT NULL CHECK (length(codigo_municipio) = 5),
+    google_sub        TEXT UNIQUE,
+    foto_url          TEXT,
+    telefono          TEXT CHECK (telefono IS NULL OR length(telefono) <= 30),
+    direccion         TEXT CHECK (direccion IS NULL OR length(direccion) <= 150),
+    activo            INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
+    pendiente         INTEGER NOT NULL DEFAULT 0 CHECK (pendiente IN (0, 1)),
+    metodo_registro   TEXT NOT NULL DEFAULT 'google' CHECK (metodo_registro = 'google'),
+    fecha_creacion    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    ultimo_acceso     TEXT,
+    CONSTRAINT fk_perfil_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_perfil_rol
-        FOREIGN KEY (id_rol) REFERENCES roles (id_rol)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT chk_perfil_google
-        CHECK (metodo_registro <> 'google' OR google_sub IS NOT NULL)
+    CONSTRAINT fk_perfil_rol FOREIGN KEY (id_rol) REFERENCES roles (id_rol)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- Un correo identifica a una sola cuenta (ignora mayúsculas).
 CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_correo
     ON usuarios (lower(correo)) WHERE correo IS NOT NULL;
 
 -- ------------------------------------------------------------
--- Empresas recicladoras (perfil empresarial)
+-- Solicitudes de recolección de los ciudadanos
+-- Pendiente → Asignada → Recolectada   (o Cancelada / Rechazada)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS solicitudes_recoleccion (
+    id_solicitud        INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_municipio    TEXT NOT NULL,
+    id_ciudadano        INTEGER NOT NULL,
+    direccion           TEXT NOT NULL,
+    tipos_residuo       TEXT NOT NULL,
+    descripcion         TEXT,
+    cantidad_estimada   REAL,
+    fecha_preferida     TEXT NOT NULL,
+    franja              TEXT NOT NULL DEFAULT 'Cualquier hora'
+                        CHECK (franja IN ('Mañana', 'Tarde', 'Cualquier hora')),
+    estado              TEXT NOT NULL DEFAULT 'Pendiente'
+                        CHECK (estado IN ('Pendiente', 'Asignada', 'Recolectada', 'Cancelada', 'Rechazada')),
+    id_repartidor       INTEGER,
+    nota                TEXT,
+    kilos_recolectados  REAL,
+    fecha_solicitud     TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    fecha_asignacion    TEXT,
+    fecha_cierre        TEXT,
+    CONSTRAINT fk_solicitud_ciudadano FOREIGN KEY (id_ciudadano) REFERENCES usuarios (id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_solicitud_repartidor FOREIGN KEY (id_repartidor) REFERENCES usuarios (id_usuario)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT chk_solicitud_asignada
+        CHECK (estado NOT IN ('Asignada', 'Recolectada') OR id_repartidor IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_estado     ON solicitudes_recoleccion (estado);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_ciudadano  ON solicitudes_recoleccion (id_ciudadano);
+CREATE INDEX IF NOT EXISTS idx_solicitudes_repartidor ON solicitudes_recoleccion (id_repartidor);
+
+-- ------------------------------------------------------------
+-- Empresas recicladoras y sus pedidos de material al municipio
+-- Pendiente → Aprobado → Entregado   (o Rechazado / Cancelado)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS empresas (
     id_empresa       INTEGER PRIMARY KEY AUTOINCREMENT,
     id_usuario       INTEGER NOT NULL UNIQUE,
     razon_social     TEXT NOT NULL CHECK (length(trim(razon_social)) BETWEEN 2 AND 120),
-    nit              TEXT CHECK (nit IS NULL OR length(nit) <= 20),
-    telefono         TEXT CHECK (telefono IS NULL OR length(telefono) <= 30),
-    correo_contacto  TEXT CHECK (correo_contacto IS NULL OR correo_contacto LIKE '%_@_%'),
-    direccion        TEXT CHECK (direccion IS NULL OR length(direccion) <= 150),
-    ciudad           TEXT CHECK (ciudad IS NULL OR length(ciudad) <= 80),
-    descripcion      TEXT CHECK (descripcion IS NULL OR length(descripcion) <= 400),
+    nit              TEXT,
+    telefono         TEXT,
+    correo_contacto  TEXT,
+    direccion        TEXT,
+    descripcion      TEXT,
     fecha_registro   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    CONSTRAINT fk_empresa_usuario
-        FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
+    CONSTRAINT fk_empresa_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
--- Materiales que una empresa necesita comprar
-CREATE TABLE IF NOT EXISTS necesidades_empresa (
-    id_necesidad      INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS pedidos_empresa (
+    id_pedido         INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_municipio  TEXT NOT NULL,
     id_empresa        INTEGER NOT NULL,
-    tipo_residuo      TEXT NOT NULL
-                      CHECK (tipo_residuo IN ('Plástico', 'Cartón', 'Papel', 'Vidrio', 'Metal', 'Otros')),
-    descripcion       TEXT CHECK (descripcion IS NULL OR length(descripcion) <= 300),
-    cantidad_minima   REAL NOT NULL CHECK (cantidad_minima > 0),
-    cantidad_maxima   REAL NOT NULL,
-    unidad            TEXT NOT NULL CHECK (unidad IN ('kg', 'unidades')),
-    precio_ofrecido   REAL NOT NULL CHECK (precio_ofrecido > 0),
-    estado            TEXT NOT NULL DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Cerrada')),
-    fecha_publicacion TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    CONSTRAINT fk_necesidad_empresa
-        FOREIGN KEY (id_empresa) REFERENCES empresas (id_empresa)
-        ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT chk_necesidad_rango
-        CHECK (cantidad_maxima >= cantidad_minima)
-);
-
--- ------------------------------------------------------------
--- Publicaciones de los vendedores en el mercado
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS publicaciones (
-    id_publicacion       INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_vendedor          INTEGER NOT NULL,
-    tipo_residuo         TEXT NOT NULL
-                         CHECK (tipo_residuo IN ('Plástico', 'Cartón', 'Papel', 'Vidrio', 'Metal', 'Otros')),
-    nombre_material      TEXT NOT NULL CHECK (length(trim(nombre_material)) BETWEEN 2 AND 80),
-    descripcion          TEXT CHECK (descripcion IS NULL OR length(descripcion) <= 400),
-    cantidad_disponible  REAL NOT NULL CHECK (cantidad_disponible >= 0),
-    unidad               TEXT NOT NULL CHECK (unidad IN ('kg', 'unidades')),
-    precio_unitario      REAL NOT NULL CHECK (precio_unitario > 0),
-    ubicacion            TEXT NOT NULL CHECK (length(trim(ubicacion)) BETWEEN 2 AND 120),
-    estado               TEXT NOT NULL DEFAULT 'Activa'
-                         CHECK (estado IN ('Activa', 'Agotada', 'Retirada')),
-    fecha_publicacion    TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    fecha_actualizacion  TEXT,
-    CONSTRAINT fk_publicacion_vendedor
-        FOREIGN KEY (id_vendedor) REFERENCES usuarios (id_usuario)
+    id_material       INTEGER NOT NULL,
+    cantidad          REAL NOT NULL CHECK (cantidad > 0),
+    precio_unitario   REAL NOT NULL CHECK (precio_unitario > 0),
+    mensaje           TEXT,
+    estado            TEXT NOT NULL DEFAULT 'Pendiente'
+                      CHECK (estado IN ('Pendiente', 'Aprobado', 'Entregado', 'Rechazado', 'Cancelado')),
+    respuesta         TEXT,
+    fecha_pedido      TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    fecha_respuesta   TEXT,
+    fecha_entrega     TEXT,
+    CONSTRAINT fk_pedido_empresa FOREIGN KEY (id_empresa) REFERENCES empresas (id_empresa)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT chk_publicacion_enteros
-        CHECK (unidad <> 'unidades' OR cantidad_disponible = CAST(cantidad_disponible AS INTEGER))
-);
-
--- Fotografías de cada publicación (hasta 3; URL de Supabase Storage)
-CREATE TABLE IF NOT EXISTS fotos_publicacion (
-    id_foto         INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_publicacion  INTEGER NOT NULL,
-    imagen          TEXT NOT NULL CHECK (imagen LIKE 'https://%' OR imagen LIKE 'http://%'),
-    orden           INTEGER NOT NULL CHECK (orden BETWEEN 1 AND 3),
-    UNIQUE (id_publicacion, orden),
-    CONSTRAINT fk_foto_publicacion
-        FOREIGN KEY (id_publicacion) REFERENCES publicaciones (id_publicacion)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
--- ------------------------------------------------------------
--- Ofertas de compra (negociaciones).
--- El vendedor no se repite aquí: se obtiene de la publicación.
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ofertas (
-    id_oferta        INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_publicacion   INTEGER NOT NULL,
-    id_comprador     INTEGER NOT NULL,
-    cantidad         REAL NOT NULL CHECK (cantidad > 0),
-    precio_unitario  REAL NOT NULL CHECK (precio_unitario > 0),
-    mensaje          TEXT CHECK (mensaje IS NULL OR length(mensaje) <= 300),
-    estado           TEXT NOT NULL DEFAULT 'Pendiente'
-                     CHECK (estado IN ('Pendiente', 'Aceptada', 'Rechazada', 'Cancelada', 'Completada')),
-    fecha_oferta     TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    fecha_respuesta  TEXT,
-    CONSTRAINT fk_oferta_publicacion
-        FOREIGN KEY (id_publicacion) REFERENCES publicaciones (id_publicacion)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_oferta_comprador
-        FOREIGN KEY (id_comprador) REFERENCES usuarios (id_usuario)
+    CONSTRAINT fk_pedido_material FOREIGN KEY (id_material) REFERENCES materiales (id_material)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
+CREATE INDEX IF NOT EXISTS idx_pedidos_estado  ON pedidos_empresa (estado);
+CREATE INDEX IF NOT EXISTS idx_pedidos_empresa ON pedidos_empresa (id_empresa);
 
 -- ------------------------------------------------------------
--- Transacciones: la operación comercial que nace cuando el
--- vendedor acepta una oferta. Cantidad y precio se leen de la
--- oferta (no se duplican).
+-- Existencias del municipio (copia de la vista del servidor).
+-- Las empresas no ven los movimientos, solo cuánto hay disponible.
+-- comprometido = aprobado a empresas y aún no entregado.
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS transacciones (
-    id_transaccion  INTEGER PRIMARY KEY AUTOINCREMENT,
-    id_oferta       INTEGER NOT NULL UNIQUE,
-    estado          TEXT NOT NULL DEFAULT 'En curso'
-                    CHECK (estado IN ('En curso', 'Completada', 'Cancelada')),
-    fecha_acuerdo   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    fecha_cierre    TEXT,
-    CONSTRAINT fk_transaccion_oferta
-        FOREIGN KEY (id_oferta) REFERENCES ofertas (id_oferta)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT chk_transaccion_cierre
-        CHECK ((estado = 'En curso' AND fecha_cierre IS NULL)
-            OR (estado <> 'En curso' AND fecha_cierre IS NOT NULL))
+CREATE TABLE IF NOT EXISTS existencias_municipio (
+    id_material       INTEGER PRIMARY KEY,
+    codigo_municipio  TEXT NOT NULL,
+    nombre            TEXT NOT NULL,
+    categoria         TEXT NOT NULL,
+    unidad_medida     TEXT NOT NULL,
+    existencia        REAL NOT NULL DEFAULT 0,
+    comprometido      REAL NOT NULL DEFAULT 0
 );
 
--- ------------------------------------------------------------
--- Índices
--- ------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS idx_perfiles_rol            ON perfiles (id_rol);
-CREATE INDEX IF NOT EXISTS idx_publicaciones_vendedor  ON publicaciones (id_vendedor);
-CREATE INDEX IF NOT EXISTS idx_publicaciones_tipo      ON publicaciones (tipo_residuo, estado);
-CREATE INDEX IF NOT EXISTS idx_fotos_publicacion       ON fotos_publicacion (id_publicacion);
-CREATE INDEX IF NOT EXISTS idx_ofertas_publicacion     ON ofertas (id_publicacion);
-CREATE INDEX IF NOT EXISTS idx_ofertas_comprador       ON ofertas (id_comprador);
-CREATE INDEX IF NOT EXISTS idx_ofertas_estado          ON ofertas (estado);
-CREATE INDEX IF NOT EXISTS idx_necesidades_empresa     ON necesidades_empresa (id_empresa);
-
--- Un comprador solo puede tener una oferta pendiente por publicación
-CREATE UNIQUE INDEX IF NOT EXISTS ux_oferta_pendiente
-    ON ofertas (id_publicacion, id_comprador) WHERE estado = 'Pendiente';
-
--- ------------------------------------------------------------
--- Triggers de integridad del mercado
--- ------------------------------------------------------------
-
--- Solo un vendedor activo puede publicar
-CREATE TRIGGER IF NOT EXISTS trg_publicacion_vendedor
-BEFORE INSERT ON publicaciones
-FOR EACH ROW
-WHEN NOT EXISTS (
-    SELECT 1 FROM perfiles p JOIN roles r ON r.id_rol = p.id_rol
-    WHERE p.id_usuario = NEW.id_vendedor AND r.codigo = 'vendedor' AND p.activo = 1
-)
-BEGIN
-    SELECT RAISE(ABORT, 'Solo una cuenta de vendedor activa puede publicar materiales.');
-END;
-
--- Solo compradores o empresas activas pueden ofertar, nunca sobre lo propio,
--- solo sobre publicaciones activas y sin superar lo disponible
-CREATE TRIGGER IF NOT EXISTS trg_oferta_validar
-BEFORE INSERT ON ofertas
-FOR EACH ROW
-BEGIN
-    SELECT RAISE(ABORT, 'Una oferta nueva debe quedar en estado Pendiente.')
-    WHERE NEW.estado <> 'Pendiente';
-
-    SELECT RAISE(ABORT, 'Solo compradores o empresas recicladoras activas pueden enviar ofertas.')
-    WHERE NOT EXISTS (
-        SELECT 1 FROM perfiles p JOIN roles r ON r.id_rol = p.id_rol
-        WHERE p.id_usuario = NEW.id_comprador
-          AND r.codigo IN ('comprador', 'empresa') AND p.activo = 1
-    );
-
-    SELECT RAISE(ABORT, 'No puedes ofertar por tu propia publicación.')
-    WHERE (SELECT id_vendedor FROM publicaciones WHERE id_publicacion = NEW.id_publicacion) = NEW.id_comprador;
-
-    SELECT RAISE(ABORT, 'La publicación no está disponible para recibir ofertas.')
-    WHERE (SELECT estado FROM publicaciones WHERE id_publicacion = NEW.id_publicacion) <> 'Activa';
-
-    SELECT RAISE(ABORT, 'La cantidad solicitada supera la cantidad disponible.')
-    WHERE NEW.cantidad > (SELECT cantidad_disponible FROM publicaciones
-                          WHERE id_publicacion = NEW.id_publicacion) + 0.000001;
-END;
-
--- Cambios de estado permitidos en una negociación
-CREATE TRIGGER IF NOT EXISTS trg_oferta_estado
-BEFORE UPDATE OF estado ON ofertas
-FOR EACH ROW
-WHEN NEW.estado <> OLD.estado AND NOT (
-       (OLD.estado = 'Pendiente' AND NEW.estado IN ('Aceptada', 'Rechazada', 'Cancelada'))
-    OR (OLD.estado = 'Aceptada'  AND NEW.estado IN ('Completada', 'Cancelada'))
-)
-BEGIN
-    SELECT RAISE(ABORT, 'Cambio de estado de la oferta no permitido.');
-END;
-
--- Una transacción solo puede existir para una oferta aceptada
-CREATE TRIGGER IF NOT EXISTS trg_transaccion_oferta
-BEFORE INSERT ON transacciones
-FOR EACH ROW
-WHEN (SELECT estado FROM ofertas WHERE id_oferta = NEW.id_oferta) <> 'Aceptada'
-BEGIN
-    SELECT RAISE(ABORT, 'Solo se registran transacciones de ofertas aceptadas.');
-END;
-
--- Solo las cuentas de empresa recicladora tienen perfil empresarial
-CREATE TRIGGER IF NOT EXISTS trg_empresa_rol
-BEFORE INSERT ON empresas
-FOR EACH ROW
-WHEN NOT EXISTS (
-    SELECT 1 FROM perfiles p JOIN roles r ON r.id_rol = p.id_rol
-    WHERE p.id_usuario = NEW.id_usuario AND r.codigo = 'empresa'
-)
-BEGIN
-    SELECT RAISE(ABORT, 'El perfil empresarial requiere una cuenta de empresa recicladora.');
-END;
-
--- ------------------------------------------------------------
--- Datos de catálogo (necesarios para que el sistema funcione)
--- ------------------------------------------------------------
-INSERT OR IGNORE INTO roles (codigo, nombre, descripcion) VALUES
-    ('administrador', 'Administrador',       'Gestiona usuarios, supervisa el mercado y opera el centro de acopio.'),
-    ('vendedor',      'Vendedor',            'Ofrece residuos aprovechables a compradores y empresas.'),
-    ('comprador',     'Comprador',           'Persona o pequeño negocio que compra residuos a la población.'),
-    ('empresa',       'Empresa recicladora', 'Organización que compra materiales para procesos de reciclaje.');
-
-INSERT OR IGNORE INTO permisos (codigo, descripcion) VALUES
-    ('inventario.gestionar',    'Operar el centro de acopio: materiales, recolecciones, inventario, historial y reportes'),
-    ('usuarios.gestionar',      'Consultar usuarios, activar o desactivar cuentas y cambiar el tipo de cuenta'),
-    ('mercado.supervisar',      'Consultar todas las publicaciones, transacciones y estadísticas del mercado'),
-    ('mercado.consultar',       'Consultar el mercado de materiales'),
-    ('publicaciones.gestionar', 'Crear, editar y retirar publicaciones propias'),
-    ('ofertas.recibir',         'Consultar, aceptar y rechazar ofertas recibidas'),
-    ('ofertas.enviar',          'Enviar ofertas de compra y consultar sus negociaciones'),
-    ('empresa.gestionar',       'Gestionar el perfil empresarial y las necesidades de materiales'),
-    ('perfil.editar',           'Consultar y editar el perfil propio');
-
-INSERT OR IGNORE INTO roles_permisos (id_rol, id_permiso)
-SELECT r.id_rol, p.id_permiso
-FROM roles r JOIN permisos p
-WHERE (r.codigo = 'administrador' AND p.codigo IN
-          ('inventario.gestionar', 'usuarios.gestionar', 'mercado.supervisar', 'mercado.consultar', 'perfil.editar'))
-   OR (r.codigo = 'vendedor' AND p.codigo IN
-          ('mercado.consultar', 'publicaciones.gestionar', 'ofertas.recibir', 'perfil.editar'))
-   OR (r.codigo = 'comprador' AND p.codigo IN
-          ('mercado.consultar', 'ofertas.enviar', 'perfil.editar'))
-   OR (r.codigo = 'empresa' AND p.codigo IN
-          ('mercado.consultar', 'ofertas.enviar', 'empresa.gestionar', 'perfil.editar'));
-
--- Los usuarios que ya existían reciben un perfil local (sin Google):
--- Administrador conserva ese rol; los operadores pasan a vendedores.
-INSERT OR IGNORE INTO perfiles (id_usuario, id_rol, metodo_registro)
-SELECT u.id_usuario,
-       (SELECT id_rol FROM roles
-        WHERE codigo = CASE u.rol WHEN 'Administrador' THEN 'administrador' ELSE 'vendedor' END),
-       'demo'
-FROM usuarios u;
-
-PRAGMA user_version = 3;
+PRAGMA user_version = 5;
 `
     };
 })();

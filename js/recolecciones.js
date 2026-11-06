@@ -19,8 +19,12 @@
 
     function cargarResponsables(idSelect, seleccionado) {
         const select = document.getElementById(idSelect);
+        // Responsables: administradores y repartidores activos del municipio
         const usuarios = Eco.DB.consultar(
-            'SELECT id_usuario, nombre, rol FROM usuarios ORDER BY nombre COLLATE NOCASE'
+            `SELECT u.id_usuario, u.nombre, r.nombre AS rol
+             FROM usuarios u JOIN perfiles p ON p.id_usuario = u.id_usuario JOIN roles r ON r.id_rol = p.id_rol
+             WHERE p.activo = 1 AND r.codigo IN ('administrador', 'repartidor')
+             ORDER BY r.codigo, u.nombre COLLATE NOCASE`
         );
         select.innerHTML = '<option value="">Selecciona un responsable</option>' +
             usuarios.map((usuario) => `

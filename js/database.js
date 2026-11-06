@@ -17,9 +17,9 @@
     const TABLAS_REPLICA = [
         'roles', 'permisos', 'roles_permisos',
         'usuarios', 'perfiles',
-        'materiales', 'recolecciones', 'movimientos',
-        'empresas', 'necesidades_empresa',
-        'publicaciones', 'fotos_publicacion', 'ofertas', 'transacciones'
+        'materiales', 'solicitudes_recoleccion', 'recolecciones',
+        'empresas', 'pedidos_empresa', 'movimientos',
+        'existencias_municipio'
     ];
 
     let bd = null;
@@ -30,15 +30,13 @@
     function crearReplicaVacia() {
         const nueva = new SQL.Database();
         nueva.run(Eco.SQL.ESQUEMA);
-        nueva.run(Eco.SQL.ESQUEMA_MERCADO);
+        nueva.run(Eco.SQL.ESQUEMA_MUNICIPAL);
         // Las reglas (triggers) se aplican en el servidor; en la réplica
         // solo se copian datos ya validados.
         const triggers = nueva.exec("SELECT name FROM sqlite_master WHERE type = 'trigger'");
         if (triggers.length) {
             triggers[0].values.forEach(([nombre]) => nueva.run(`DROP TRIGGER IF EXISTS "${nombre}"`));
         }
-        // El catálogo de roles y permisos llega desde el servidor.
-        nueva.run('DELETE FROM roles_permisos; DELETE FROM permisos; DELETE FROM roles;');
         nueva.run('PRAGMA foreign_keys = OFF');
         return nueva;
     }

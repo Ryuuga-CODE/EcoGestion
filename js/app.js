@@ -216,10 +216,11 @@
             ['Inventario', Eco.Inventario, 'inventario'],
             ['Historial', Eco.Historial, 'historial'],
             ['Reportes', Eco.Reportes, 'reportes'],
-            ['Mercado', Eco.Mercado, 'mercado'],
-            ['Mis publicaciones', Eco.Publicaciones, 'publicaciones'],
-            ['Ofertas', Eco.Ofertas, 'ofertas'],
-            ['Panel empresarial', Eco.Empresa, 'empresa'],
+            ['Solicitudes', Eco.Solicitudes, 'solicitudes'],
+            ['Mis solicitudes', Eco.Solicitudes && Eco.Solicitudes.ciudadano, 'mis-solicitudes'],
+            ['Mis rutas', Eco.Solicitudes && Eco.Solicitudes.repartidor, 'rutas'],
+            ['Pedidos de empresas', Eco.Pedidos, 'pedidos'],
+            ['Panel empresarial', Eco.Pedidos && Eco.Pedidos.empresa, 'empresa'],
             ['Administración', Eco.Administracion, 'administracion'],
             ['Perfil', Eco.Perfil, 'perfil']
         ];
@@ -235,9 +236,78 @@
                 console.error(`No se pudo actualizar ${nombre}:`, error);
             }
         });
+        actualizarContadores();
         if (errores > 0) {
             Eco.Util.mostrarAviso('Algunas secciones no se pudieron actualizar. Revisa la consola.', 'error');
         }
+    }
+
+    /** Números en el menú: lo que espera atención de la cuenta. */
+    function actualizarContadores() {
+        const usuario = Eco.Sesion && Eco.Sesion.usuarioActual();
+        const contadores = {
+            'menu-contador-solicitudes': ['solicitudes', "SELECT COUNT(*) FROM solicitudes_recoleccion WHERE estado = 'Pendiente'"],
+            'menu-contador-pedidos': ['pedidos', "SELECT COUNT(*) FROM pedidos_empresa WHERE estado = 'Pendiente'"],
+            'menu-contador-usuarios': ['administracion', 'SELECT COUNT(*) FROM perfiles WHERE pendiente = 1'],
+            'menu-contador-rutas': ['rutas', "SELECT COUNT(*) FROM solicitudes_recoleccion WHERE estado = 'Asignada' AND id_repartidor = ?"]
+        };
+        Object.entries(contadores).forEach(([id, [vista, sql]]) => {
+            const elemento = document.getElementById(id);
+            if (!elemento) return;
+            const total = usuario && Eco.Sesion.puedeVerVista(vista) ? Eco.DB.contar(sql, sql.includes('?') ? [usuario.id_usuario] : []) : 0;
+            elemento.textContent = total > 99 ? '99+' : String(total);
+            elemento.hidden = total === 0;
+        });
+    }
+
+    /**
+     * Pide un texto corto (motivo de un rechazo, una cancelación…).
+     * Devuelve el texto, o null si la persona desiste.
+     */
+    let resolverTexto = null;
+    function pedirTexto(opciones) {
+        const config = opciones || {};
+        if (resolverTexto) { resolverTexto(null); resolverTexto = null; }
+        document.getElementById('texto-etiqueta').textContent = config.etiqueta || 'Confirmar';
+        document.getElementById('titulo-modal-texto').textContent = config.titulo || 'Motivo';
+        document.getElementById('texto-mensaje').textContent = config.mensaje || '';
+        document.getElementById('texto-mensaje').hidden = !config.mensaje;
+        document.getElementById('texto-label').textContent = config.campo || 'Motivo';
+        document.getElementById('texto-valor').value = '';
+        document.getElementById('texto-valor').placeholder = config.ayuda || '';
+        document.getElementById('btn-texto-confirmar').textContent = config.textoConfirmar || 'Confirmar';
+        document.getElementById('btn-texto-confirmar').className = `boton ${config.peligro ? 'boton-peligro' : 'boton-primario'}`;
+        Eco.Util.limpiarErrorCampo('texto-valor');
+        abrirModal('modal-texto');
+        return new Promise((resolver) => {
+            resolverTexto = (valor) => { resolver(valor); };
+            document.getElementById('form-texto').dataset.obligatorio = config.obligatorio ? '1' : '';
+        });
+    }
+
+    function iniciarModalTexto() {
+        const formulario = document.getElementById('form-texto');
+        formulario.addEventListener('submit', (evento) => {
+            evento.preventDefault();
+            const valor = document.getElementById('texto-valor').value.replace(/\s+/g, ' ').trim();
+            if (formulario.dataset.obligatorio && valor.length < 3) {
+                Eco.Util.mostrarErrorCampo('texto-valor', 'Escribe al menos unas palabras.');
+                return;
+            }
+            const resolver = resolverTexto;
+            resolverTexto = null;
+            cerrarModal('modal-texto');
+            if (resolver) resolver(valor);
+        });
+        document.getElementById('texto-valor').addEventListener('input', () => Eco.Util.limpiarErrorCampo('texto-valor'));
+        // Cerrar el modal sin confirmar = desistir
+        new MutationObserver(() => {
+            if (!document.getElementById('modal-texto').classList.contains('abierto') && resolverTexto) {
+                const resolver = resolverTexto;
+                resolverTexto = null;
+                resolver(null);
+            }
+        }).observe(document.getElementById('modal-texto'), { attributes: true, attributeFilter: ['class'] });
     }
 
     function hayModalAbierto() {
@@ -340,6 +410,7 @@
         iniciarNavegacion();
         iniciarModales();
         iniciarBaseDatosUI();
+        iniciarModalTexto();
 
         Eco.Materiales.init();
         Eco.Recolecciones.init();
@@ -348,10 +419,8 @@
         Eco.Reportes.init();
         Eco.Panel.init();
         Eco.Perfil.init();
-        Eco.Mercado.init();
-        Eco.Publicaciones.init();
-        Eco.Ofertas.init();
-        Eco.Empresa.init();
+        Eco.Solicitudes.init();
+        Eco.Pedidos.init();
         Eco.Administracion.init();
 
         try {
@@ -373,6 +442,7 @@
         refrescarTodo,
         despuesDeCambio,
         confirmar,
+        pedirTexto,
         abrirModal,
         cerrarModal,
         notificar: Eco.Util.mostrarAviso,

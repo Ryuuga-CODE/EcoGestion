@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Guía de uso de EcoGestión: cómo vender, comprar y gestionar residuos aprovechables.">
+    <meta name="description" content="Guía de uso de EcoGestión: cómo solicitar, recoger, comprar y gestionar los residuos aprovechables de tu municipio.">
     <title>Guía de uso · EcoGestión</title>
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/mercado.css">
+    <link rel="stylesheet" href="css/componentes.css">
     <link rel="stylesheet" href="css/ayuda.css">
 </head>
 <body class="pagina-ayuda">
@@ -30,11 +30,12 @@
         </div>
         <div class="ayuda-portada">
             <h1>Cómo usar EcoGestión</h1>
-            <p>EcoGestión conecta a quienes separan residuos aprovechables con quienes los compran: vecinos, pequeños negocios y empresas recicladoras. Esta guía explica, paso a paso, cómo entrar y qué puedes hacer según tu tipo de cuenta.</p>
+            <p>EcoGestión organiza la recolección de residuos aprovechables de un municipio: los ciudadanos separan en casa y piden la recolección, los repartidores la hacen, el centro de acopio municipal pesa y guarda el material, y las empresas recicladoras se lo compran al municipio. Esta guía explica qué hace cada tipo de cuenta, paso a paso.</p>
             <nav class="ayuda-atajos" aria-label="Ir directo a">
-                <a href="#vendedor">Quiero vender</a>
-                <a href="#comprador">Quiero comprar</a>
+                <a href="#ciudadano">Soy ciudadano</a>
+                <a href="#repartidor">Soy repartidor</a>
                 <a href="#empresa">Soy una empresa recicladora</a>
+                <a href="#administrador">Administro un municipio</a>
                 <a href="#preguntas">Preguntas frecuentes</a>
             </nav>
         </div>
@@ -46,12 +47,13 @@
             <ol>
                 <li><a href="#antes">Antes de empezar</a></li>
                 <li><a href="#entrar">Entrar por primera vez</a></li>
-                <li><a href="#vendedor">Si vendes residuos</a></li>
-                <li><a href="#comprador">Si compras residuos</a></li>
+                <li><a href="#como-funciona">Cómo funciona</a></li>
+                <li><a href="#ciudadano">Si eres ciudadano</a></li>
+                <li><a href="#repartidor">Si eres repartidor</a></li>
                 <li><a href="#empresa">Si eres una empresa recicladora</a></li>
-                <li><a href="#estados">Estados de una oferta</a></li>
-                <li><a href="#perfil">Tu perfil y cerrar sesión</a></li>
                 <li><a href="#administrador">Para administradores</a></li>
+                <li><a href="#estados">Estados de solicitudes y pedidos</a></li>
+                <li><a href="#perfil">Tu perfil y cerrar sesión</a></li>
                 <li><a href="#celular">Desde el celular</a></li>
                 <li><a href="#preguntas">Preguntas frecuentes</a></li>
                 <li><a href="#privacidad">Tus datos y tu privacidad</a></li>
@@ -66,208 +68,215 @@
                 <ul>
                     <li><strong>Una cuenta de Google</strong> (la misma de Gmail). EcoGestión no usa contraseñas propias.</li>
                     <li><strong>Un navegador actualizado</strong>: Chrome, Edge, Firefox o Safari, en computador o celular.</li>
-                    <li><strong>Conexión a Internet.</strong> Todo lo que registras se guarda en línea y lo ven las demás personas del mercado.</li>
+                    <li><strong>Conexión a Internet.</strong> Todo se guarda en línea y lo ven, al instante, las personas de tu municipio que deben verlo.</li>
                 </ul>
                 <p>No hay que instalar nada. La dirección es <a href="https://ryuuga-code.github.io/EcoGestion/">ryuuga-code.github.io/EcoGestion</a>.</p>
+                <figure>
+                    <a href="img/ayuda/01-acceso.jpg"><img src="img/ayuda/01-acceso.jpg" alt="Pantalla de inicio con el botón Continuar con Google" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Pantalla de inicio.</figcaption>
+                </figure>
             </section>
 
             <section id="entrar">
                 <h2>Entrar por primera vez</h2>
                 <ol class="pasos">
                     <li><strong>Abre EcoGestión</strong> y pulsa <em>Continuar con Google</em>.</li>
-                    <li><strong>Elige tu cuenta de Google</strong> en la ventana que se abre y acepta compartir tu nombre, correo y foto.</li>
-                    <li><strong>Completa tu registro</strong> (solo la primera vez): elige el tipo de cuenta, escribe tu ciudad y barrio y, si quieres, un teléfono para que te contacten.</li>
-                    <li>Pulsa <em>Crear cuenta</em>. Llegarás al <em>Mercado</em>.</li>
+                    <li><strong>Elige tu cuenta de Google</strong> y acepta compartir tu nombre, correo y foto.</li>
+                    <li><strong>Elige tu tipo de cuenta</strong>: ciudadano, repartidor o empresa recicladora.</li>
+                    <li><strong>Elige tu departamento y luego tu municipio</strong> en las listas. Están todos los municipios de Colombia según el DANE.</li>
+                    <li>Escribe tu <strong>dirección y barrio</strong> (obligatoria para ciudadanos) y un <strong>teléfono</strong> (obligatorio para repartidores). Pulsa <em>Crear cuenta</em>.</li>
                 </ol>
                 <figure>
-                    <a href="img/ayuda/02-registro.jpg"><img src="img/ayuda/02-registro.jpg" alt="Formulario de registro con los tres tipos de cuenta: Vendedor, Comprador y Empresa recicladora" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>La primera vez eliges qué tipo de cuenta necesitas.</figcaption>
+                    <a href="img/ayuda/02-registro.jpg"><img src="img/ayuda/02-registro.jpg" alt="Formulario de registro con los tipos de cuenta y las listas de departamento y municipio" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>La primera vez eliges tu tipo de cuenta y tu municipio.</figcaption>
                 </figure>
 
                 <h3>¿Qué tipo de cuenta elijo?</h3>
                 <div class="tipos-cuenta">
                     <div class="tipo-cuenta">
-                        <strong>Vendedor</strong>
-                        <p>Separas o recolectas material (botellas, cartón, latas…) y quieres venderlo.</p>
+                        <strong>Ciudadano</strong>
+                        <p>Separas en casa plástico, papel y cartón, vidrio y metal, y quieres que pasen a recogerlos.</p>
                     </div>
                     <div class="tipo-cuenta">
-                        <strong>Comprador</strong>
-                        <p>Compras material a la población, por ejemplo para tu chatarrería o tu bodega de reciclaje.</p>
+                        <strong>Repartidor</strong>
+                        <p>Trabajas recogiendo los residuos en el municipio. El administrador debe aprobar tu cuenta.</p>
                     </div>
                     <div class="tipo-cuenta">
                         <strong>Empresa recicladora</strong>
-                        <p>Representas una empresa que compra material por volumen para transformarlo.</p>
+                        <p>Representas una empresa que compra material recuperado para transformarlo.</p>
                     </div>
                 </div>
-                <p class="nota">El tipo de cuenta no se puede cambiar por tu cuenta. Si te equivocaste, pídele a un administrador que lo cambie.</p>
+                <p class="nota">Tu cuenta queda en el municipio que elegiste y solo ves lo de ese municipio. Si te equivocaste de municipio o de tipo de cuenta, pídeselo al administrador.</p>
             </section>
 
-            <section id="vendedor">
-                <h2>Si vendes residuos</h2>
-
-                <h3>Publicar un material</h3>
+            <section id="como-funciona">
+                <h2>Cómo funciona</h2>
                 <ol class="pasos">
-                    <li>En el menú, entra a <em>Mis publicaciones</em> y pulsa <em>Nueva publicación</em>.</li>
-                    <li>Elige el <strong>tipo de residuo</strong> (Plástico, Cartón, Papel, Vidrio, Metal u Otros) y escribe un nombre claro, por ejemplo “Botellas PET transparentes”.</li>
-                    <li>Indica la <strong>cantidad disponible</strong>, si vendes por <strong>kilogramo o por unidad</strong>, y el <strong>precio</strong> en pesos.</li>
-                    <li>Revisa la <strong>ubicación</strong> (se llena con la de tu perfil) y agrega una descripción: cómo está separado, si está limpio, horarios para recoger.</li>
-                    <li>Agrega <strong>hasta 3 fotos</strong>. La primera será la portada. Fotos claras con buena luz reciben más ofertas.</li>
-                    <li>Pulsa <em>Guardar publicación</em>. Aparecerá en el Mercado para todos.</li>
+                    <li>El <strong>ciudadano</strong> separa sus residuos y <em>solicita la recolección</em>, con fecha y franja horaria.</li>
+                    <li>El <strong>administrador</strong> del municipio <em>asigna</em> la solicitud a un repartidor.</li>
+                    <li>El <strong>repartidor</strong> la recoge, pesa cada material y <em>registra los kilos</em>.</li>
+                    <li>Esos kilos entran solos al <strong>inventario del centro de acopio</strong> municipal.</li>
+                    <li>Las <strong>empresas recicladoras</strong> ven el material disponible y hacen <em>pedidos</em>; el administrador los aprueba y registra la entrega.</li>
                 </ol>
-                <figure>
-                    <a href="img/ayuda/07-nueva-publicacion.jpg"><img src="img/ayuda/07-nueva-publicacion.jpg" alt="Formulario para publicar un material con tipo, nombre, cantidad, precio, ubicación y fotos" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Formulario de nueva publicación.</figcaption>
-                </figure>
-
-                <h3>Administrar tus publicaciones</h3>
-                <p>En <em>Mis publicaciones</em> ves todo lo que ofreces, cuántas ofertas tiene cada una y tus ventas.</p>
-                <ul>
-                    <li><strong>Editar</strong> (lápiz): cambia precio, cantidad, fotos o descripción.</li>
-                    <li><strong>Retirar</strong>: la publicación deja de verse en el Mercado. Las ofertas pendientes se rechazan solas. Puedes <em>Reactivarla</em> después.</li>
-                    <li><strong>Eliminar</strong> (papelera): solo aparece si nadie ha ofertado todavía.</li>
-                </ul>
-                <figure>
-                    <a href="img/ayuda/06-mis-publicaciones.jpg"><img src="img/ayuda/06-mis-publicaciones.jpg" alt="Tabla de publicaciones propias con estado, ofertas y acciones" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Tus publicaciones con su estado y las ofertas recibidas.</figcaption>
-                </figure>
-
-                <h3>Responder ofertas y cerrar una venta</h3>
-                <ol class="pasos">
-                    <li>Cuando alguien te hace una oferta, aparece un número junto a <em>Ofertas</em> en el menú.</li>
-                    <li>En <em>Ofertas recibidas</em> ves quién oferta, cuánto pide, a qué precio y su mensaje.</li>
-                    <li>Pulsa <em>Aceptar</em> o <em>Rechazar</em>. Al aceptar, esa cantidad se descuenta de tu publicación para que nadie más la compre.</li>
-                    <li>Usa el botón del sobre para ver el correo y el teléfono del comprador y coordinar la entrega.</li>
-                    <li>Cuando entregues el material y recibas el pago, pulsa <em>Marcar completada</em>. La venta pasa a tu <em>Historial de ventas</em>.</li>
-                </ol>
-                <figure>
-                    <a href="img/ayuda/09-ofertas-recibidas.jpg"><img src="img/ayuda/09-ofertas-recibidas.jpg" alt="Ofertas recibidas con botones Aceptar y Rechazar" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Ofertas recibidas: acepta, rechaza o contacta al comprador.</figcaption>
-                </figure>
-                <p class="nota">Si una oferta pide más de lo que te queda, EcoGestión no te dejará aceptarla. Recházala o edita la cantidad de tu publicación.</p>
             </section>
 
-            <section id="comprador">
-                <h2>Si compras residuos</h2>
-
-                <h3>Buscar material</h3>
-                <p>En <em>Mercado</em> ves todo lo que está a la venta. Puedes filtrar por:</p>
-                <ul>
-                    <li><strong>Tipo de residuo</strong>, con los botones de arriba.</li>
-                    <li><strong>Nombre</strong>, en el buscador.</li>
-                    <li><strong>Ciudad o barrio</strong>, para encontrar material cerca.</li>
-                    <li><strong>Orden</strong>: más recientes, menor o mayor precio, mayor cantidad.</li>
-                </ul>
-                <figure>
-                    <a href="img/ayuda/03-mercado.jpg"><img src="img/ayuda/03-mercado.jpg" alt="Mercado con tarjetas de materiales, filtros por tipo y buscador" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>El Mercado con sus filtros.</figcaption>
-                </figure>
-                <p>Pulsa <em>Ver detalle</em> para ver las fotos, la descripción y los <strong>datos de contacto del vendedor</strong> (correo y teléfono).</p>
-                <figure>
-                    <a href="img/ayuda/05-detalle.jpg"><img src="img/ayuda/05-detalle.jpg" alt="Detalle de una publicación con datos de contacto del vendedor" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Detalle de una publicación.</figcaption>
-                </figure>
-
-                <h3>Hacer una oferta</h3>
+            <section id="ciudadano">
+                <h2>Si eres ciudadano</h2>
+                <p>Al entrar llegas a <em>Mis solicitudes</em>. Arriba ves cuántas están en espera, con repartidor y recolectadas, y cuántos kilos has aprovechado.</p>
+                <h3>Pedir una recolección</h3>
                 <ol class="pasos">
-                    <li>Pulsa <em>Hacer oferta</em> en la publicación.</li>
-                    <li>Escribe la <strong>cantidad</strong> que quieres (no puede ser mayor que la disponible) y el <strong>precio</strong> que ofreces. Viene sugerido el precio publicado, pero puedes proponer otro.</li>
-                    <li>Agrega un mensaje si quieres, por ejemplo el día en que puedes recoger. El total se calcula solo.</li>
-                    <li>Pulsa <em>Enviar oferta</em>.</li>
+                    <li>Pulsa <em>Solicitar recolección</em>.</li>
+                    <li>Marca <strong>qué separaste</strong>: plástico, papel y cartón, vidrio, metal u otros.</li>
+                    <li>Revisa la <strong>dirección</strong> (viene de tu perfil) y elige la <strong>fecha</strong> y la <strong>franja</strong>: mañana, tarde o cualquier hora.</li>
+                    <li>Si quieres, indica cuántos kilos calculas y alguna indicación (“bolsas en la portería”). Pulsa <em>Enviar solicitud</em>.</li>
                 </ol>
                 <figure>
-                    <a href="img/ayuda/04-oferta.jpg"><img src="img/ayuda/04-oferta.jpg" alt="Ventana para hacer una oferta con cantidad, precio, mensaje y total" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Ventana para hacer una oferta.</figcaption>
+                    <a href="img/ayuda/04-nueva-solicitud.jpg"><img src="img/ayuda/04-nueva-solicitud.jpg" alt="Formulario para solicitar una recolección con tipos de residuo, dirección, fecha y franja" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Solicitar una recolección.</figcaption>
                 </figure>
-
-                <h3>Seguir tus negociaciones</h3>
-                <p>En <em>Ofertas</em> ves el estado de cada oferta enviada y, en <em>Mis compras</em>, las operaciones cerradas. Mientras una oferta esté <em>Pendiente</em>, puedes cancelarla. Solo puedes tener una oferta pendiente por publicación.</p>
+                <h3>Seguir tus solicitudes</h3>
+                <p>Cada solicitud muestra su avance: <em>Recibida → Con repartidor → Recolectada</em>. Cuando tiene repartidor, ves su nombre y su teléfono. Cuando se recoge, ves los kilos que se registraron.</p>
                 <figure>
-                    <a href="img/ayuda/08-ofertas-enviadas.jpg"><img src="img/ayuda/08-ofertas-enviadas.jpg" alt="Lista de ofertas enviadas con su estado" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Tus ofertas enviadas y su estado.</figcaption>
+                    <a href="img/ayuda/03-ciudadano.jpg"><img src="img/ayuda/03-ciudadano.jpg" alt="Vista Mis solicitudes con una solicitud asignada a un repartidor y la guía de separación" loading="lazy" width="1366" height="1182"></a>
+                    <figcaption>Mis solicitudes.</figcaption>
                 </figure>
+                <p class="nota">Puedes tener hasta 3 solicitudes abiertas. Si ya no la necesitas, usa <em>Cancelar solicitud</em> mientras no se haya recogido.</p>
+            </section>
+
+            <section id="repartidor">
+                <h2>Si eres repartidor</h2>
+                <p>Después de registrarte, tu cuenta queda <strong>esperando aprobación</strong>. Cuando el administrador de tu municipio la apruebe, vuelve a pulsar <em>Continuar con Google</em>.</p>
+                <h3>Tu ruta</h3>
+                <p>En <em>Mis rutas</em> están las solicitudes que te asignaron, ordenadas por la fecha que pidió el ciudadano. Cada tarjeta trae la dirección, los residuos, las indicaciones y el teléfono del ciudadano. <em>Ver mapa</em> abre la dirección en Google Maps.</p>
+                <figure>
+                    <a href="img/ayuda/05-repartidor.jpg"><img src="img/ayuda/05-repartidor.jpg" alt="Vista Mis rutas con tres solicitudes asignadas y el historial de recolecciones" loading="lazy" width="1366" height="1154"></a>
+                    <figcaption>Mis rutas.</figcaption>
+                </figure>
+                <h3>Registrar los kilos</h3>
+                <ol class="pasos">
+                    <li>En la solicitud recogida, pulsa <em>Registrar kilos</em>.</li>
+                    <li>Aparece una línea por cada tipo que marcó el ciudadano. Elige el material exacto y escribe lo que pesó.</li>
+                    <li>Con <em>Agregar otro material</em> sumas más líneas. Abajo ves el total en kilos.</li>
+                    <li>Pulsa <em>Registrar recolección</em>. El material entra al inventario del centro de acopio.</li>
+                </ol>
+                <figure>
+                    <a href="img/ayuda/06-registrar-kilos.jpg"><img src="img/ayuda/06-registrar-kilos.jpg" alt="Formulario para registrar los kilos de cada material recogido" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Registrar los kilos de una recolección.</figcaption>
+                </figure>
+                <p class="nota">Si no pudiste recogerla (nadie atendió, dirección equivocada…), usa <em>No pude recogerla</em> y cuenta qué pasó. La solicitud vuelve al administrador para asignarla otra vez.</p>
             </section>
 
             <section id="empresa">
                 <h2>Si eres una empresa recicladora</h2>
-                <p>Tienes todo lo de un comprador y además un <em>Panel empresarial</em>:</p>
-                <ul>
-                    <li><strong>Perfil empresarial</strong>: nombre de la empresa, NIT, teléfono, correo, dirección y ciudad. Es lo que verán los vendedores.</li>
-                    <li><strong>Necesidades de materiales</strong>: publica qué compras, en qué cantidades (mínima y máxima) y a qué precio. Los vendedores las ven en el Mercado, en la pestaña <em>Necesidades de empresas</em>, y te pueden contactar.</li>
-                    <li><strong>Buscar vendedores</strong>: filtra por tipo de residuo o ubicación y pulsa <em>Ver publicaciones</em> para ver solo lo de ese vendedor.</li>
-                    <li><strong>Resumen de compras</strong>: ofertas pendientes, compras en curso, compras realizadas y total comprado.</li>
-                </ul>
+                <p>El <em>Panel empresarial</em> muestra el <strong>material disponible</strong> en el centro de acopio de tu municipio, sin lo que ya está reservado para otras empresas.</p>
+                <ol class="pasos">
+                    <li>Revisa que tu <strong>perfil empresarial</strong> (abajo) tenga tus datos de contacto.</li>
+                    <li>Pulsa <em>Pedir</em> en el material que necesitas.</li>
+                    <li>Escribe la <strong>cantidad</strong> y el <strong>precio que ofreces</strong> por kilo. Verás el valor total. Pulsa <em>Enviar pedido</em>.</li>
+                    <li>En <em>Mis pedidos</em> sigues su estado y lees la respuesta del municipio (por ejemplo, cuándo recogerlo).</li>
+                </ol>
                 <figure>
-                    <a href="img/ayuda/10-panel-empresarial.jpg"><img src="img/ayuda/10-panel-empresarial.jpg" alt="Panel empresarial con necesidades, perfil de la empresa y búsqueda de vendedores" loading="lazy" width="1366" height="860"></a>
+                    <a href="img/ayuda/12-pedido.jpg"><img src="img/ayuda/12-pedido.jpg" alt="Formulario de pedido con cantidad, precio y valor total" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Pedir material al municipio.</figcaption>
+                </figure>
+                <figure>
+                    <a href="img/ayuda/11-empresa.jpg"><img src="img/ayuda/11-empresa.jpg" alt="Panel empresarial con material disponible, pedidos y perfil de la empresa" loading="lazy" width="1366" height="1657"></a>
                     <figcaption>Panel empresarial.</figcaption>
                 </figure>
-                <p class="nota">Cuando ya no necesites un material, usa <em>Cerrar</em> en esa necesidad. Puedes reabrirla cuando quieras.</p>
+                <p class="nota">Mientras el pedido esté pendiente o aprobado puedes cancelarlo. EcoGestión registra el acuerdo; el pago y la recogida se coordinan con el municipio.</p>
+            </section>
+
+            <section id="administrador">
+                <h2>Para administradores</h2>
+                <p>El administrador representa a la alcaldía de <strong>un municipio</strong>. Solo ve y gestiona las cuentas, solicitudes, inventario y pedidos de ese municipio. Los correos de administrador los autoriza el responsable del sistema; al registrarse, cada uno elige su municipio.</p>
+                <h3>El día a día</h3>
+                <p>El <em>Panel principal</em> muestra lo que espera atención: solicitudes sin asignar, repartidores por aprobar y pedidos abiertos. El menú también muestra esos números.</p>
+                <figure>
+                    <a href="img/ayuda/07-admin-panel.jpg"><img src="img/ayuda/07-admin-panel.jpg" alt="Panel principal con tareas pendientes e indicadores del centro de acopio" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Panel principal del centro de acopio.</figcaption>
+                </figure>
+                <h3>Solicitudes</h3>
+                <p>En <em>Solicitudes</em> filtras por estado y buscas por ciudadano, dirección o repartidor. Para cada solicitud abierta puedes:</p>
+                <ul>
+                    <li><em>Asignar</em> o <em>Reasignar</em>: eliges el repartidor. Entre paréntesis ves cuántas tiene ya.</li>
+                    <li><em>Registrar kilos</em>: si el repartidor te reporta por teléfono, lo registras tú.</li>
+                    <li><em>Rechazar</em>: con un motivo que el ciudadano verá.</li>
+                </ul>
+                <figure>
+                    <a href="img/ayuda/08-admin-solicitudes.jpg"><img src="img/ayuda/08-admin-solicitudes.jpg" alt="Tabla de solicitudes del municipio con botones Reasignar, Registrar kilos y Rechazar" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Solicitudes del municipio.</figcaption>
+                </figure>
+                <figure>
+                    <a href="img/ayuda/09-asignar.jpg"><img src="img/ayuda/09-asignar.jpg" alt="Ventana para elegir el repartidor de una solicitud" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Asignar un repartidor.</figcaption>
+                </figure>
+                <h3>Pedidos de empresas</h3>
+                <p><em>Aprobar</em> reserva el material para esa empresa (ya no se puede sacar por otra vía). Cuando la empresa lo recoge, <em>Registrar entrega</em> crea la salida del inventario. También puedes rechazar o anular con un motivo, y exportar los pedidos a CSV.</p>
+                <figure>
+                    <a href="img/ayuda/10-admin-pedidos.jpg"><img src="img/ayuda/10-admin-pedidos.jpg" alt="Tabla de pedidos de empresas con botones Aprobar, Rechazar y Registrar entrega" loading="lazy" width="1366" height="860"></a>
+                    <figcaption>Pedidos de empresas.</figcaption>
+                </figure>
+                <h3>Usuarios</h3>
+                <p>En <em>Usuarios</em> apruebas a los repartidores nuevos, activas o desactivas cuentas y cambias el tipo de cuenta (ciudadano, repartidor o administrador). Abajo hay estadísticas de solicitudes, kilos por repartidor y entregas a empresas.</p>
+                <figure>
+                    <a href="img/ayuda/13-admin-usuarios.jpg"><img src="img/ayuda/13-admin-usuarios.jpg" alt="Lista de usuarios del municipio con un repartidor por aprobar" loading="lazy" width="1366" height="1729"></a>
+                    <figcaption>Usuarios del municipio.</figcaption>
+                </figure>
+                <h3>Centro de acopio</h3>
+                <p><em>Materiales</em>, <em>Recolecciones</em>, <em>Inventario</em>, <em>Historial</em> y <em>Reportes</em> registran lo que entra y sale del centro de acopio. Crea primero los materiales (por ejemplo “Botellas PET” en Plástico): son los que los repartidores eligen al registrar los kilos. También puedes registrar material que llega directo al centro de acopio con <em>Nueva recolección</em>.</p>
+                <p class="nota">Una cuenta desactivada no puede entrar, pero su historial se conserva. Si desactivas a un repartidor, sus solicitudes asignadas vuelven a quedar sin asignar. Siempre debe quedar al menos un administrador activo en el municipio.</p>
             </section>
 
             <section id="estados">
-                <h2>Estados de una oferta</h2>
-                <p>Toda oferta pasa por estos estados. EcoGestión no permite saltos distintos a los que se muestran.</p>
-                <div class="flujo-estados" role="img" aria-label="Pendiente pasa a Aceptada, Rechazada o Cancelada; Aceptada pasa a Completada o Cancelada">
+                <h2>Estados de solicitudes y pedidos</h2>
+                <h3>Solicitud de recolección</h3>
+                <div class="flujo-estados" role="img" aria-label="Sin asignar pasa a Asignada y luego a Recolectada; también puede terminar Cancelada o Rechazada">
                     <div class="flujo-fila">
-                        <span class="estado-chip estado-pendiente"><span class="punto"></span>Pendiente</span>
-                        <span class="flecha" aria-hidden="true">→</span>
-                        <span class="estado-chip estado-aceptada"><span class="punto"></span>Aceptada</span>
-                        <span class="flecha" aria-hidden="true">→</span>
-                        <span class="estado-chip estado-completada"><span class="punto"></span>Completada</span>
+                        <span class="estado-chip estado-pendiente"><span class="punto"></span>Sin asignar</span><span class="flecha" aria-hidden="true">→</span><span class="estado-chip estado-asignada"><span class="punto"></span>Asignada</span><span class="flecha" aria-hidden="true">→</span><span class="estado-chip estado-recolectada"><span class="punto"></span>Recolectada</span>
                     </div>
                     <div class="flujo-ramas">
-                        <span>Pendiente también puede terminar en <span class="estado-chip estado-rechazada"><span class="punto"></span>Rechazada</span> o <span class="estado-chip estado-cancelada"><span class="punto"></span>Cancelada</span></span>
-                        <span>Aceptada también puede terminar en <span class="estado-chip estado-cancelada"><span class="punto"></span>Cancelada</span></span>
+                        <span>Mientras está sin asignar o asignada puede terminar en <span class="estado-chip estado-cancelada"><span class="punto"></span>Cancelada</span> o <span class="estado-chip estado-rechazada"><span class="punto"></span>Rechazada</span></span>
+                        <span>Si el repartidor no pudo recogerla, vuelve a <span class="estado-chip estado-pendiente"><span class="punto"></span>Sin asignar</span></span>
                     </div>
                 </div>
                 <table class="tabla-ayuda">
                     <thead><tr><th>Estado</th><th>Qué significa</th><th>Quién lo cambia</th></tr></thead>
                     <tbody>
-                        <tr><td>Pendiente</td><td>La oferta espera respuesta.</td><td>El vendedor la acepta o la rechaza; el comprador puede cancelarla.</td></tr>
-                        <tr><td>Aceptada</td><td>Hay un acuerdo. La cantidad se descontó de la publicación.</td><td>El vendedor la marca como completada. Cualquiera de los dos puede cancelarla, y entonces la cantidad vuelve a la publicación.</td></tr>
-                        <tr><td>Completada</td><td>El material se entregó y se pagó.</td><td>Estado final.</td></tr>
-                        <tr><td>Rechazada</td><td>El vendedor no aceptó, o retiró la publicación.</td><td>Estado final.</td></tr>
-                        <tr><td>Cancelada</td><td>Una de las partes desistió.</td><td>Estado final.</td></tr>
+                        <tr><td>Sin asignar</td><td>El municipio recibió la solicitud.</td><td>El administrador la asigna o la rechaza; el ciudadano puede cancelarla.</td></tr>
+                        <tr><td>Asignada</td><td>Un repartidor la tiene en su ruta.</td><td>El repartidor registra los kilos o la devuelve; el administrador puede reasignarla.</td></tr>
+                        <tr><td>Recolectada</td><td>Se recogió y el material entró al centro de acopio.</td><td>Estado final.</td></tr>
+                        <tr><td>Cancelada / Rechazada</td><td>El ciudadano desistió o el municipio no puede atenderla (con motivo).</td><td>Estado final.</td></tr>
                     </tbody>
                 </table>
+                <h3>Pedido de una empresa</h3>
+                <div class="flujo-estados" role="img" aria-label="Por responder pasa a Aprobado y luego a Entregado; también puede terminar Rechazado o Cancelado">
+                    <div class="flujo-fila">
+                        <span class="estado-chip estado-pendiente"><span class="punto"></span>Por responder</span><span class="flecha" aria-hidden="true">→</span><span class="estado-chip estado-aprobado"><span class="punto"></span>Aprobado</span><span class="flecha" aria-hidden="true">→</span><span class="estado-chip estado-entregado"><span class="punto"></span>Entregado</span>
+                    </div>
+                    <div class="flujo-ramas">
+                        <span>Antes de entregarse puede terminar en <span class="estado-chip estado-rechazado"><span class="punto"></span>Rechazado</span> (lo decide el municipio) o <span class="estado-chip estado-cancelado"><span class="punto"></span>Cancelado</span> (lo decide la empresa)</span>
+                    </div>
+                </div>
             </section>
 
             <section id="perfil">
                 <h2>Tu perfil y cerrar sesión</h2>
-                <p>Pulsa tu nombre en la parte de abajo del menú o entra a <em>Mi perfil</em>. Ahí ves tu tipo de cuenta y lo que puedes hacer, y puedes cambiar tu <strong>teléfono</strong> y tu <strong>ciudad y barrio</strong>. El nombre, el correo y la foto vienen de Google.</p>
+                <p>Pulsa tu nombre en la parte de abajo del menú o entra a <em>Mi perfil</em>. Ahí ves tu tipo de cuenta, tu municipio y lo que puedes hacer, y puedes cambiar tu <strong>teléfono</strong> y tu <strong>dirección</strong>. El nombre, el correo y la foto vienen de Google.</p>
                 <figure>
-                    <a href="img/ayuda/14-perfil.jpg"><img src="img/ayuda/14-perfil.jpg" alt="Página de perfil con datos de la cuenta y permisos" loading="lazy" width="1366" height="860"></a>
+                    <a href="img/ayuda/14-perfil.jpg"><img src="img/ayuda/14-perfil.jpg" alt="Página de perfil con municipio, teléfono, dirección y permisos" loading="lazy" width="1366" height="860"></a>
                     <figcaption>Tu perfil.</figcaption>
                 </figure>
                 <p>Para <strong>cerrar sesión</strong>, pulsa el botón de salida junto a tu nombre o <em>Cerrar sesión</em> en tu perfil. Hazlo siempre que uses un computador compartido.</p>
-            </section>
-
-            <section id="administrador">
-                <h2>Para administradores</h2>
-                <p>Las cuentas de administrador manejan además el <strong>centro de acopio</strong> y la <strong>supervisión del mercado</strong>:</p>
-                <ul>
-                    <li><em>Panel principal</em>, <em>Materiales</em>, <em>Recolecciones</em>, <em>Inventario</em>, <em>Historial</em> y <em>Reportes</em>: registran lo que entra y sale del centro de acopio. El inventario se calcula solo y los reportes se exportan a CSV (Excel).</li>
-                    <li><em>Usuarios y supervisión</em>: activar o desactivar cuentas, cambiar el tipo de cuenta, ver todas las publicaciones y negociaciones, y ver estadísticas.</li>
-                    <li>El recuadro <em>Base de datos</em> de la barra lateral muestra la última actualización y permite <em>Sincronizar</em> o descargar una <em>Copia</em>.</li>
-                </ul>
-                <figure>
-                    <a href="img/ayuda/11-panel-acopio.jpg"><img src="img/ayuda/11-panel-acopio.jpg" alt="Panel principal del centro de acopio con indicadores y actividad reciente" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Panel principal del centro de acopio.</figcaption>
-                </figure>
-                <figure>
-                    <a href="img/ayuda/12-admin-usuarios.jpg"><img src="img/ayuda/12-admin-usuarios.jpg" alt="Administración de usuarios con botones para cambiar tipo y desactivar" loading="lazy" width="1366" height="860"></a>
-                    <figcaption>Administración de usuarios.</figcaption>
-                </figure>
-                <p class="nota">Una cuenta desactivada no puede entrar y sus publicaciones dejan de verse, pero su historial se conserva. Siempre debe quedar al menos un administrador activo.</p>
             </section>
 
             <section id="celular">
                 <h2>Desde el celular</h2>
                 <div class="celular">
                     <figure class="figura-celular">
-                        <a href="img/ayuda/15-celular.jpg"><img src="img/ayuda/15-celular.jpg" alt="EcoGestión en la pantalla de un celular" loading="lazy" width="390" height="844"></a>
+                        <a href="img/ayuda/15-celular.jpg"><img src="img/ayuda/15-celular.jpg" alt="Mis solicitudes en la pantalla de un celular" loading="lazy" width="390" height="844"></a>
                     </figure>
                     <div>
-                        <p>EcoGestión se adapta a la pantalla del celular. El menú se abre con el botón de tres líneas, arriba a la izquierda.</p>
+                        <p>EcoGestión se adapta a la pantalla del celular, ideal para los repartidores en la calle. El menú se abre con el botón de tres líneas, arriba a la izquierda.</p>
                         <p>Para tenerlo a mano como una aplicación, en Chrome abre el menú (⋮) y elige <em>Agregar a la pantalla principal</em>.</p>
                     </div>
                 </div>
@@ -276,8 +285,16 @@
             <section id="preguntas">
                 <h2>Preguntas frecuentes</h2>
                 <details>
-                    <summary>No me aparece lo que publicó otra persona</summary>
+                    <summary>Mi municipio no tiene administrador. ¿Qué pasa con mi solicitud?</summary>
+                    <p>Queda guardada como <em>Sin asignar</em> hasta que la alcaldía de tu municipio tenga un administrador en EcoGestión.</p>
+                </details>
+                <details>
+                    <summary>No veo los cambios que hizo otra persona</summary>
                     <p>La información se actualiza sola cada 30 segundos y cada vez que haces algo. Si tienes prisa, recarga la página.</p>
+                </details>
+                <details>
+                    <summary>Me registré como repartidor y no puedo entrar</summary>
+                    <p>Tu cuenta espera la aprobación del administrador de tu municipio. Cuando te confirmen, vuelve a pulsar <em>Continuar con Google</em>.</p>
                 </details>
                 <details>
                     <summary>Google me dice “Acceso bloqueado”</summary>
@@ -285,23 +302,19 @@
                 </details>
                 <details>
                     <summary>Me sale “Esta cuenta está desactivada”</summary>
-                    <p>Un administrador desactivó tu cuenta. Comunícate con él para que la active.</p>
+                    <p>El administrador de tu municipio desactivó tu cuenta. Comunícate con la alcaldía para que la active.</p>
                 </details>
                 <details>
-                    <summary>¿Puedo cambiar el precio después de publicar?</summary>
-                    <p>Sí, con el lápiz en <em>Mis publicaciones</em>. Las ofertas ya enviadas conservan el precio que propuso el comprador.</p>
+                    <summary>¿Puedo cambiar de municipio?</summary>
+                    <p>No desde tu perfil, porque todo tu historial pertenece a ese municipio. Escríbele al administrador del sistema.</p>
                 </details>
                 <details>
-                    <summary>¿Por qué no puedo eliminar una publicación?</summary>
-                    <p>Porque ya recibió ofertas, y su historial debe conservarse. Usa <em>Retirar</em> para que deje de verse.</p>
+                    <summary>¿Qué es “Áreas no municipalizadas” en Amazonas, Guainía o Vaupés?</summary>
+                    <p>Son territorios que el DANE lista aparte porque no son municipios (por ejemplo, La Chorrera o Pacoa). Aparecen en la lista para que nadie se quede sin su lugar.</p>
                 </details>
                 <details>
-                    <summary>¿EcoGestión cobra comisión o procesa pagos?</summary>
-                    <p>No. EcoGestión pone en contacto a las partes y registra el acuerdo. La entrega y el pago se coordinan directamente entre comprador y vendedor.</p>
-                </details>
-                <details>
-                    <summary>¿Por qué me pide unidades enteras?</summary>
-                    <p>Cuando un material se vende por unidad (por ejemplo, botellas de vidrio), la cantidad debe ser un número entero. Si se vende por kilogramo, puedes usar decimales.</p>
+                    <summary>¿EcoGestión procesa pagos?</summary>
+                    <p>No. Registra los pedidos de las empresas y su entrega; el pago se acuerda directamente con el municipio.</p>
                 </details>
                 <details>
                     <summary>Me dice “Tu sesión venció”</summary>
@@ -313,9 +326,9 @@
                 <h2>Tus datos y tu privacidad</h2>
                 <ul>
                     <li>EcoGestión recibe de Google <strong>solo tu nombre, tu correo y tu foto</strong>. <strong>Nunca ve ni guarda tu contraseña.</strong></li>
-                    <li>Tu nombre, correo, teléfono y ubicación los pueden ver las demás personas registradas, porque son necesarios para contactarse en el mercado. Si no quieres compartir tu teléfono, déjalo vacío.</li>
-                    <li>La información se guarda en un servidor protegido. Cada persona solo puede modificar lo suyo.</li>
-                    <li>Si quieres dejar de usar EcoGestión o que se eliminen tus datos, escríbele al administrador del sistema.</li>
+                    <li>Tu dirección y tu teléfono solo los ven el administrador de tu municipio y, mientras dure una recolección, el repartidor asignado (y tú ves el teléfono del repartidor).</li>
+                    <li>Nadie de otro municipio ve tus datos. Cada persona solo puede modificar lo suyo, y el servidor lo comprueba en cada operación.</li>
+                    <li>Si quieres dejar de usar EcoGestión o que se eliminen tus datos, escríbele al administrador de tu municipio.</li>
                 </ul>
             </section>
 

@@ -3,8 +3,11 @@
    - Inicio de sesión con Google Identity Services (GIS).
    - El token de Google se envía a Supabase Auth, que verifica su
      firma en el servidor y entrega una sesión propia.
-   - Registro de cuentas nuevas con selección del tipo de cuenta
-     (se crea en el servidor con la función registrar_cuenta).
+   - Registro de cuentas nuevas: tipo de cuenta (ciudadano,
+     repartidor o empresa) y municipio (Departamento → Municipio,
+     DIVIPOLA). Se crea en el servidor con registrar_cuenta.
+     Los correos autorizados entran como administradores del
+     municipio que elijan. Los repartidores esperan aprobación.
    - Permisos por rol (roles_permisos) para mostrar solo las
      opciones que corresponden. El servidor vuelve a comprobarlos
      en cada operación.
@@ -23,15 +26,17 @@
         inventario: ['inventario.gestionar'],
         historial: ['inventario.gestionar'],
         reportes: ['inventario.gestionar'],
-        mercado: ['mercado.consultar'],
-        publicaciones: ['publicaciones.gestionar'],
-        ofertas: ['ofertas.recibir', 'ofertas.enviar'],
-        empresa: ['empresa.gestionar'],
-        administracion: ['usuarios.gestionar', 'mercado.supervisar'],
+        solicitudes: ['solicitudes.gestionar'],
+        pedidos: ['pedidos.gestionar'],
+        administracion: ['usuarios.gestionar'],
+        'mis-solicitudes': ['solicitudes.crear'],
+        rutas: ['recolecciones.realizar'],
+        empresa: ['pedidos.crear', 'empresa.gestionar'],
         perfil: ['perfil.editar']
     };
-    const TIPOS_REGISTRO = ['vendedor', 'comprador', 'empresa'];
-    const CAMPOS_REGISTRO = ['registro-tipo', 'registro-ubicacion', 'registro-telefono', 'registro-razon', 'registro-nit'];
+    const TIPOS_REGISTRO = ['ciudadano', 'repartidor', 'empresa'];
+    const CAMPOS_REGISTRO = ['registro-tipo', 'registro-departamento', 'registro-municipio', 'registro-direccion',
+        'registro-telefono', 'registro-razon', 'registro-nit'];
 
     let usuario = null;
     let idUsuario = null;
@@ -39,6 +44,8 @@
     let gisCargado = false;
     let nonceCrudo = null;
     let ocupado = false;
+    let registroAdmin = false;
+    let lugaresRegistro = null;
 
     const config = () => Eco.Config || {};
     const $ = (id) => document.getElementById(id);
@@ -75,8 +82,8 @@
     /* ------------------------- Datos de la cuenta ------------------------- */
     function cargarUsuario(id) {
         const fila = Eco.DB.consultarUno(
-            `SELECT u.id_usuario, u.nombre, u.correo, p.foto_url, p.telefono, p.ubicacion,
-                    p.activo, p.metodo_registro, p.id_rol, r.codigo AS rol, r.nombre AS rol_nombre
+            `SELECT u.id_usuario, u.nombre, u.correo, p.foto_url, p.telefono, p.direccion, p.codigo_municipio,
+                    p.activo, p.pendiente, p.metodo_registro, p.id_rol, r.codigo AS rol, r.nombre AS rol_nombre
              FROM usuarios u
              JOIN perfiles p ON p.id_usuario = u.id_usuario
              JOIN roles r ON r.id_rol = p.id_rol
@@ -108,9 +115,8 @@
     }
 
     function vistaInicial() {
-        if (puedeVerVista('panel')) return 'panel';
-        if (puedeVerVista('mercado')) return 'mercado';
-        return 'perfil';
+        const orden = ['panel', 'mis-solicitudes', 'rutas', 'empresa'];
+        return orden.find((vista) => puedeVerVista(vista)) || 'perfil';
     }
 
     /* ------------------------ Interfaz según el rol ------------------------ */
@@ -130,6 +136,9 @@
             $('tarjeta-usuario-avatar').innerHTML = avatar(usuario.nombre, usuario.foto_url);
             $('tarjeta-usuario-nombre').textContent = usuario.nombre;
             $('tarjeta-usuario-rol').textContent = usuario.rol_nombre;
+            $('marca-municipio').textContent = Eco.Lugares.nombre(usuario.codigo_municipio);
+        } else {
+            $('marca-municipio').textContent = 'Residuos aprovechables';
         }
     }
 
@@ -137,10 +146,13 @@
     /** Pregunta al servidor el estado de la cuenta y continúa según el caso. */
     async function continuarSesion() {
         const info = await Eco.Nube.rpc('iniciar_sesion');
-        if (info.estado === 'inactivo') {
+        if (info.estado === 'inactivo' || info.estado === 'pendiente') {
             await Eco.Nube.cerrarSesion();
             mostrarAcceso();
-            mostrarErrorAcceso('Esta cuenta está desactivada. Comunícate con el administrador.');
+            mostrarErrorAcceso(info.estado === 'pendiente'
+                ? 'Tu cuenta de repartidor está creada y espera la aprobación del administrador de tu municipio. Vuelve a entrar cuando te confirmen.'
+                : 'Esta cuenta está desactivada. Comunícate con el administrador de tu municipio.',
+            false, info.estado === 'pendiente');
             return;
         }
         if (info.estado === 'registro') {
@@ -175,7 +187,7 @@
     function revalidar() {
         if (!usuario) return;
         const datos = cargarUsuario(idUsuario);
-        if (!datos || !datos.activo) {
+        if (!datos || !Number(datos.activo)) {
             Eco.Util.mostrarAviso('Tu cuenta fue desactivada. La sesión se cerrará.', 'error');
             window.setTimeout(cerrarSesion, 1600);
             return;
@@ -276,7 +288,15 @@
         $('registro-nombre').textContent = info.nombre;
         $('registro-correo').textContent = info.correo;
         $('form-registro').reset();
-        actualizarCamposEmpresa();
+        registroAdmin = Boolean(info.administrador);
+        $('registro-aviso-admin').hidden = !registroAdmin;
+        $('registro-campo-tipo').hidden = registroAdmin;
+        $('registro-subtitulo').textContent = registroAdmin
+            ? 'Es tu primera vez en EcoGestión. Elige el municipio que administras.'
+            : 'Es tu primera vez en EcoGestión. Elige tu tipo de cuenta y tu municipio.';
+        if (!lugaresRegistro) lugaresRegistro = Eco.Comun.prepararLugares('registro-departamento', 'registro-municipio');
+        lugaresRegistro.reiniciar();
+        actualizarCamposTipo();
         Eco.Util.limpiarErroresCampos(CAMPOS_REGISTRO);
     }
 
@@ -295,28 +315,47 @@
         return marcado ? marcado.value : '';
     }
 
-    function actualizarCamposEmpresa() {
-        $('registro-campos-empresa').hidden = tipoSeleccionado() !== 'empresa';
+    /** Cada tipo de cuenta pide datos distintos. */
+    function actualizarCamposTipo() {
+        const tipo = registroAdmin ? 'administrador' : tipoSeleccionado();
+        const direccionObligatoria = tipo === 'ciudadano' || tipo === '';
+        $('registro-campos-empresa').hidden = tipo !== 'empresa';
+        $('registro-direccion-obligatorio').hidden = !direccionObligatoria;
+        $('registro-direccion-opcional').hidden = direccionObligatoria;
+        $('registro-direccion-ayuda').textContent = tipo === 'empresa'
+            ? 'Dirección de la empresa o de la planta.'
+            : tipo === 'repartidor' || tipo === 'administrador'
+                ? 'Opcional.'
+                : 'Aquí pasará el repartidor a recoger tus residuos.';
+        $('registro-telefono-obligatorio').hidden = tipo !== 'repartidor';
+        $('registro-telefono-opcional').hidden = tipo === 'repartidor';
     }
 
     async function enviarRegistro(evento) {
         evento.preventDefault();
-        const tipo = tipoSeleccionado();
+        const tipo = registroAdmin ? 'administrador' : tipoSeleccionado();
         const datos = {
             telefono: $('registro-telefono').value.trim(),
-            ubicacion: $('registro-ubicacion').value.replace(/\s+/g, ' ').trim(),
+            municipio: $('registro-municipio').value,
+            direccion: $('registro-direccion').value.replace(/\s+/g, ' ').trim(),
             razonSocial: $('registro-razon').value.replace(/\s+/g, ' ').trim(),
             nit: $('registro-nit').value.trim()
         };
         let valido = true;
         const error = (id, mensaje) => { Eco.Util.mostrarErrorCampo(id, mensaje); valido = false; };
         Eco.Util.limpiarErroresCampos(CAMPOS_REGISTRO);
-        if (!TIPOS_REGISTRO.includes(tipo)) error('registro-tipo', 'Selecciona el tipo de cuenta.');
-        if (datos.ubicacion.length < 2 || datos.ubicacion.length > 120) {
-            error('registro-ubicacion', 'Indica tu ciudad y barrio (entre 2 y 120 caracteres).');
+        if (!registroAdmin && !TIPOS_REGISTRO.includes(tipo)) error('registro-tipo', 'Selecciona el tipo de cuenta.');
+        if (!$('registro-departamento').value) error('registro-departamento', 'Selecciona el departamento.');
+        else if (!Eco.Lugares.municipio(datos.municipio)) error('registro-municipio', 'Selecciona el municipio.');
+        if (tipo === 'ciudadano' && datos.direccion.length < 5) {
+            error('registro-direccion', 'Escribe tu dirección y barrio (mínimo 5 caracteres).');
+        } else if (datos.direccion.length > 150) {
+            error('registro-direccion', 'La dirección no puede superar 150 caracteres.');
         }
         if (datos.telefono && !/^[0-9+()\s-]{7,30}$/.test(datos.telefono)) {
             error('registro-telefono', 'Escribe un teléfono válido (solo números, espacios, +, - o paréntesis).');
+        } else if (tipo === 'repartidor' && !datos.telefono) {
+            error('registro-telefono', 'Los repartidores deben indicar un teléfono de contacto.');
         }
         if (tipo === 'empresa') {
             if (datos.razonSocial.length < 2 || datos.razonSocial.length > 120) {
@@ -332,7 +371,8 @@
         try {
             await Eco.Nube.rpc('registrar_cuenta', {
                 p_tipo: tipo,
-                p_ubicacion: datos.ubicacion,
+                p_codigo_municipio: datos.municipio,
+                p_direccion: datos.direccion || null,
                 p_telefono: datos.telefono || null,
                 p_razon_social: tipo === 'empresa' ? datos.razonSocial : null,
                 p_nit: tipo === 'empresa' ? (datos.nit || null) : null
@@ -349,9 +389,10 @@
     }
 
     /* --------------------------- Pantalla de acceso --------------------------- */
-    function mostrarErrorAcceso(mensaje, enRegistro) {
+    function mostrarErrorAcceso(mensaje, enRegistro, informativo) {
         const caja = enRegistro ? $('registro-error') : $('acceso-error');
         caja.textContent = mensaje;
+        caja.classList.toggle('acceso-info', Boolean(informativo));
         caja.hidden = false;
     }
 
@@ -382,10 +423,15 @@
         $('btn-cancelar-registro').addEventListener('click', cancelarRegistro);
         document.querySelectorAll('input[name="registro-tipo"]').forEach((opcion) => {
             opcion.addEventListener('change', () => {
-                actualizarCamposEmpresa();
+                actualizarCamposTipo();
                 Eco.Util.limpiarErrorCampo('registro-tipo');
             });
         });
+        CAMPOS_REGISTRO.slice(1).forEach((id) => {
+            $(id).addEventListener('input', () => Eco.Util.limpiarErrorCampo(id));
+            $(id).addEventListener('change', () => Eco.Util.limpiarErrorCampo(id));
+        });
+        $('registro-departamento').addEventListener('change', () => Eco.Util.limpiarErrorCampo('registro-municipio'));
         $('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
         $('tarjeta-usuario-perfil').addEventListener('click', () => Eco.App.irA('perfil'));
 

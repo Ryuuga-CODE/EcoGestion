@@ -204,7 +204,7 @@
         // Mensajes que ya vienen redactados por el servidor (Supabase) o la conexión
         if (error && error.mensajeServidor) return error.mensajeServidor;
         const texto = String(error && error.message ? error.message : error || '');
-        if (/UNIQUE constraint failed: materiales\.nombre/i.test(texto)) {
+        if (/UNIQUE constraint failed: materiales\.(codigo_municipio, materiales\.)?nombre/i.test(texto)) {
             return 'Ya existe un material con ese nombre.';
         }
         if (/UNIQUE constraint failed: usuarios\.nombre/i.test(texto)) {
@@ -219,30 +219,11 @@
         if (/no coincide con una recolección/i.test(texto)) {
             return 'El movimiento de entrada no coincide con la recolección registrada.';
         }
-        // Reglas del mercado (triggers de esquema_mercado.sql): el mensaje ya es claro.
-        const mensajesMercado = [
-            'Solo una cuenta de vendedor activa puede publicar materiales.',
-            'Solo compradores o empresas recicladoras activas pueden enviar ofertas.',
-            'No puedes ofertar por tu propia publicación.',
-            'La publicación no está disponible para recibir ofertas.',
-            'La cantidad solicitada supera la cantidad disponible.',
-            'Cambio de estado de la oferta no permitido.',
-            'Solo se registran transacciones de ofertas aceptadas.',
-            'El perfil empresarial requiere una cuenta de empresa recicladora.'
-        ];
-        const mensajeMercado = mensajesMercado.find((mensaje) => texto.includes(mensaje));
-        if (mensajeMercado) return mensajeMercado;
-        if (/ux_oferta_pendiente|ofertas\.id_publicacion, ofertas\.id_comprador/i.test(texto)) {
-            return 'Ya tienes una oferta pendiente para esta publicación.';
-        }
         if (/ux_usuarios_correo/i.test(texto)) {
             return 'Ese correo ya está asociado a otra cuenta.';
         }
         if (/UNIQUE constraint failed: empresas\.id_usuario/i.test(texto)) {
             return 'Esta cuenta ya tiene un perfil empresarial.';
-        }
-        if (/cantidad_disponible >= 0/i.test(texto)) {
-            return 'La operación dejaría la publicación con cantidad negativa.';
         }
         if (/^El archivo /.test(texto)) {
             return texto.split('. ')[0] + '.';

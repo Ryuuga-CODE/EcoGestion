@@ -23,7 +23,21 @@ Documento técnico para quien mantenga o extienda EcoGestión: arquitectura, mod
 
 ## 1. Visión general
 
-EcoGestión es una aplicación web **estática** (HTML, CSS y JavaScript sin frameworks ni paso de compilación) respaldada por **Supabase**:
+EcoGestión es una aplicación web **estática** (HTML, CSS y JavaScript sin frameworks ni paso de compilación) respaldada por **Supabase**, para la **gestión municipal de residuos aprovechables**. Desde la versión 5 hay cuatro tipos de cuenta (administrador de un municipio, ciudadano, repartidor y empresa recicladora) y varios municipios conviven en la misma base, aislados entre sí.
+
+```mermaid
+flowchart LR
+    C["Ciudadano<br/>crear_solicitud"] --> S[("solicitudes_recoleccion<br/>Pendiente")]
+    A["Administrador<br/>asignar_solicitud"] --> S
+    S -->|Asignada| R["Repartidor<br/>completar_solicitud"]
+    R --> REC[("recolecciones +<br/>movimientos Entrada")]
+    REC --> INV["Inventario del<br/>centro de acopio"]
+    E["Empresa<br/>crear_pedido"] --> P[("pedidos_empresa")]
+    A2["Administrador<br/>responder_pedido"] -->|aprobar: reserva<br/>entregar: Salida| P
+    P --> INV
+```
+
+Arquitectura:
 
 ```mermaid
 flowchart LR
@@ -36,7 +50,6 @@ flowchart LR
         AUTH["Auth<br/>verifica el token de Google"]
         API["API REST<br/>PostgREST"]
         PG[("PostgreSQL<br/>tablas + RLS + funciones")]
-        ST["Storage<br/>bucket fotos"]
     end
     GIS -- "ID token + nonce" --> AUTH
     AUTH -- "sesión (JWT)" --> UI
@@ -44,7 +57,6 @@ flowchart LR
     API -- "SELECT según RLS" --> R
     UI -- "POST /rpc/función" --> API
     API --> PG
-    UI -- "subir foto" --> ST
 ```
 
 **Decisiones de diseño**
@@ -65,14 +77,15 @@ flowchart LR
 index.html               Todas las vistas, modales y la pantalla de acceso (una sola página)
 ayuda.html               Manual de usuario
 css/estilos.css          Diseño base (tokens de color en :root)
-css/mercado.css          Componentes de acceso, mercado, ofertas y administración
+css/componentes.css      Componentes de acceso, solicitudes, rutas, pedidos y administración
 css/ayuda.css            Estilos del manual
-supabase/esquema_supabase.sql   Base central: tablas, triggers, RLS, funciones, Storage, catálogos
+supabase/esquema_supabase.sql   Base central: limpieza de v4, tablas, triggers, RLS, funciones, catálogos y DIVIPOLA
 database/esquema.sql            Esquema SQLite del centro de acopio (réplica)
-database/esquema_mercado.sql    Esquema SQLite del mercado (réplica)
+database/esquema_municipal.sql  Esquema SQLite de cuentas, solicitudes, empresas y pedidos (réplica)
+datos/divipola.csv              Departamentos y municipios del DANE (fuente de lugares.js y del bloque DIVIPOLA)
 js/…                     Ver tabla
 pruebas/                 Supabase simulado + pruebas SQL y de navegador
-herramientas/            generar_datos_sql.js (regenera la copia embebida del esquema)
+herramientas/            generar_datos_sql.js (regenera datos_sql.js, lugares.js y el bloque DIVIPOLA del esquema)
 img/ayuda/               Capturas del manual
 ```
 
@@ -82,14 +95,18 @@ Los scripts se cargan en este orden (`index.html`, al final del `<body>`); cada 
 |---|---|---|
 | `lib/sql-asm.js` | `initSqlJs` | Motor SQLite compilado a JavaScript (asm.js, funciona incluso con `file://`) |
 | `utilidades.js` | `Eco.Util` | Formatos (números, fechas, dinero), CSV, errores de campo, avisos, `mensajeError` |
+| `lugares.js` | `Eco.Lugares` | DIVIPOLA embebida: `DEPARTAMENTOS`, `municipiosDe(dep)`, `municipio(cod)`, `nombre(cod)` → "Soacha, Cundinamarca" |
+| `comun.js` | `Eco.Comun` | `CATEGORIAS`, `dinero`, `precio`, `cantidad`, `estado`, `insigniaTipo(s)`, `leerCantidad`, `leerPrecio`, `contacto`, `fechaCorta`, `prepararLugares(idDep, idMun)` |
 | `datos_sql.js` | `Eco.SQL` | Copia embebida de `database/*.sql` para crear la réplica |
 | `database.js` | `Eco.DB` | Réplica: `iniciar`, `cargarReplica`, `consultar`, `consultarUno`, `escalar`, `contar`, `exportar` |
 | `materiales.js` … `panel.js` | `Eco.Materiales`, `Eco.Recolecciones`, `Eco.Inventario`, `Eco.Historial`, `Eco.Reportes`, `Eco.Panel` | Centro de acopio |
 | `config.js` | `Eco.Config` | Client ID de Google, URL y clave pública de Supabase |
-| `nube.js` | `Eco.Nube` | Auth, `rpc`, `sincronizar`, `subirFoto` |
+| `nube.js` | `Eco.Nube` | Auth, `rpc`, `sincronizar` |
 | `sesion.js` | `Eco.Sesion` | Google, registro, permisos, menú por rol, revalidación |
-| `perfil.js`, `mercado.js`, `publicaciones.js`, `ofertas.js`, `empresa.js`, `administracion.js` | `Eco.Perfil`, `Eco.Mercado` (+ `Eco.MercadoUtil`), `Eco.Publicaciones`, `Eco.Ofertas`, `Eco.Empresa`, `Eco.Administracion` | Mercado y cuentas |
-| `app.js` | `Eco.App` | Arranque, navegación, modales, confirmaciones, `despuesDeCambio`, actualización periódica |
+| `solicitudes.js` | `Eco.Solicitudes` (+ `.ciudadano`, `.repartidor`) | Vistas *Solicitudes* (administrador), *Mis solicitudes* y *Mis rutas*; modales de solicitud, asignación y registro de kilos |
+| `pedidos.js` | `Eco.Pedidos` (+ `.empresa`) | *Pedidos de empresas* (administrador) y *Panel empresarial* |
+| `perfil.js`, `administracion.js` | `Eco.Perfil`, `Eco.Administracion` | Perfil propio; cuentas y estadísticas del municipio |
+| `app.js` | `Eco.App` | Arranque, navegación, modales, `confirmar`, `pedirTexto`, contadores del menú, `despuesDeCambio`, actualización periódica |
 
 ---
 
@@ -114,12 +131,12 @@ sequenceDiagram
     alt cuenta existente y activa
         P-->>S: {estado: ok, id_usuario}
         S->>P: sincronizar (lecturas según RLS)
-    else correo en correos_administradores
-        P-->>S: crea la cuenta de administrador → ok
     else cuenta nueva
-        P-->>S: {estado: registro, nombre, correo, foto}
-        U->>S: tipo de cuenta + ubicación
+        P-->>S: {estado: registro, nombre, correo, foto, administrador}
+        U->>S: tipo de cuenta (salvo administradores) + Departamento → Municipio + dirección
         S->>P: rpc registrar_cuenta(...)
+    else repartidor sin aprobar
+        P-->>S: {estado: pendiente} → se cierra la sesión con un aviso
     else cuenta desactivada
         P-->>S: {estado: inactivo} → se cierra la sesión
     end
@@ -137,12 +154,12 @@ sequenceDiagram
 `Eco.Nube.sincronizar()`:
 
 1. Para cada tabla de `Eco.DB.TABLAS_REPLICA`, pide **solo las columnas que existen en la réplica** (`Eco.DB.columnas(tabla)`), de 1000 en 1000 filas (`Range`). Así nunca se descargan columnas internas como `usuarios.auth_id`.
-2. Las 14 tablas se piden en paralelo; RLS decide qué filas llegan.
+2. Las 12 fuentes (11 tablas y la vista `existencias_municipio`) se piden en paralelo; RLS decide qué filas llegan. `departamentos` y `municipios` **no** se replican: el navegador usa `js/lugares.js`.
 3. `Eco.DB.cargarReplica(datos)` construye una **base nueva** y solo al final reemplaza la anterior. Una descarga fallida no deja la réplica a medias.
 
 En la réplica:
 - Se eliminan los triggers: las reglas ya se aplicaron en el servidor.
-- `PRAGMA foreign_keys = OFF`: la cuenta puede no ver todas las filas referenciadas (por ejemplo, un comprador no ve `materiales`).
+- `PRAGMA foreign_keys = OFF`: la cuenta puede no ver todas las filas referenciadas (por ejemplo, una empresa no ve `movimientos` ni a los repartidores).
 - Se inserta con `INSERT OR IGNORE`; si una fila no cumple un `CHECK` local se omite y se avisa en la consola.
 
 **Cuándo se sincroniza:** al iniciar sesión, después de cada operación (`Eco.App.despuesDeCambio`), cada 30 s si la pestaña está visible y no hay un modal abierto, al volver a la pestaña (`focus`) y con el botón *Sincronizar* (solo administradores).
@@ -155,79 +172,82 @@ En la réplica:
 
 ```mermaid
 erDiagram
+    departamentos ||--o{ municipios : agrupa
+    municipios ||--o{ perfiles : ubica
     roles ||--o{ roles_permisos : tiene
     permisos ||--o{ roles_permisos : otorga
     roles ||--o{ perfiles : define
     usuarios ||--|| perfiles : amplia
-    usuarios ||--o| empresas : representa
-    empresas ||--o{ necesidades_empresa : publica
-    usuarios ||--o{ publicaciones : vende
-    publicaciones ||--o{ fotos_publicacion : muestra
-    publicaciones ||--o{ ofertas : recibe
-    usuarios ||--o{ ofertas : compra
-    ofertas ||--o| transacciones : genera
+    usuarios ||--o{ solicitudes_recoleccion : solicita
+    usuarios ||--o{ solicitudes_recoleccion : recoge
+    solicitudes_recoleccion ||--o{ recolecciones : produce
     materiales ||--o{ recolecciones : recibe
-    materiales ||--o{ movimientos : registra
     recolecciones ||--o| movimientos : origina
-    usuarios ||--o{ recolecciones : responde
+    materiales ||--o{ movimientos : registra
+    usuarios ||--o| empresas : representa
+    empresas ||--o{ pedidos_empresa : pide
+    materiales ||--o{ pedidos_empresa : incluye
+    pedidos_empresa ||--o| movimientos : sale
 
-    usuarios {
-        bigint id_usuario PK
-        uuid auth_id UK
-        text nombre UK
-        text rol
-        text correo UK
+    municipios {
+        text codigo PK
+        text codigo_departamento FK
+        text nombre
     }
     perfiles {
         bigint id_usuario PK, FK
         bigint id_rol FK
-        text google_sub UK
-        text foto_url
+        text codigo_municipio FK
         text telefono
-        text ubicacion
+        text direccion
         smallint activo
+        smallint pendiente
     }
-    publicaciones {
-        bigint id_publicacion PK
-        bigint id_vendedor FK
-        text tipo_residuo
-        text nombre_material
-        numeric cantidad_disponible
-        text unidad
-        numeric precio_unitario
+    solicitudes_recoleccion {
+        bigint id_solicitud PK
+        text codigo_municipio FK
+        bigint id_ciudadano FK
+        bigint id_repartidor FK
+        text tipos_residuo
+        date fecha_preferida
+        text franja
         text estado
+        numeric kilos_recolectados
     }
-    ofertas {
-        bigint id_oferta PK
-        bigint id_publicacion FK
-        bigint id_comprador FK
+    recolecciones {
+        bigint id_recoleccion PK
+        bigint id_material FK
+        bigint id_usuario FK
+        bigint id_solicitud FK
+        numeric cantidad
+    }
+    pedidos_empresa {
+        bigint id_pedido PK
+        bigint id_empresa FK
+        bigint id_material FK
         numeric cantidad
         numeric precio_unitario
         text estado
-    }
-    transacciones {
-        bigint id_transaccion PK
-        bigint id_oferta FK, UK
-        text estado
-        timestamp fecha_cierre
     }
     movimientos {
         bigint id_movimiento PK
+        text codigo_municipio FK
         bigint id_material FK
         bigint id_recoleccion FK, UK
+        bigint id_pedido FK, UK
         text tipo
         numeric cantidad
-        date fecha
     }
 ```
 
 Notas:
-- **`usuarios.rol`** conserva su significado original (rol en el centro de acopio: `Administrador`/`Operador`). El **tipo de cuenta** de la plataforma es `perfiles.id_rol`. Las funciones del servidor mantienen ambos sincronizados.
-- **El vendedor de una oferta no se guarda en `ofertas`**: se obtiene de `publicaciones.id_vendedor`, para no duplicar datos.
-- **`transacciones`** representa la operación comercial (*En curso → Completada/Cancelada*). La cantidad y el precio se leen de la oferta.
-- **Inventario:** las existencias no se almacenan; la vista `vista_existencias` (réplica) las calcula sumando entradas y restando salidas de `movimientos`.
-- **Restricciones relevantes:** `cantidad_disponible >= 0`, cantidades enteras cuando la unidad es `unidades`, `cantidad_maxima >= cantidad_minima`, índice único parcial `ux_oferta_pendiente` (una oferta pendiente por comprador y publicación), y `chk_transaccion_cierre` (`fecha_cierre` solo existe al cerrar).
-- **Triggers en PostgreSQL:** `trg_movimiento_validar` (unidad coincide con el material; una salida no supera las existencias) y `trg_oferta_estado` (transiciones válidas).
+- **Municipio:** el código DANE de 5 dígitos (`municipios.codigo`) aparece en `perfiles`, `materiales`, `solicitudes_recoleccion`, `recolecciones`, `movimientos` y `pedidos_empresa`. Es lo que usan las políticas y funciones para aislar los municipios. Las áreas no municipalizadas de Amazonas, Guainía y Vaupés están incluidas porque DIVIPOLA las codifica igual.
+- **`usuarios.rol`** conserva su significado original (`Administrador`/`Operador`). El **tipo de cuenta** es `perfiles.id_rol`. Las funciones mantienen ambos sincronizados.
+- **`perfiles.pendiente = 1`**: repartidor recién registrado (siempre con `activo = 0`, `chk_perfil_pendiente`). Aprobar es `admin_estado_usuario(id, true)`.
+- **`tipos_residuo`** se guarda como texto (`"Papel y cartón, Plástico"`) con las mismas categorías de `materiales.categoria`: así se replica sin conversiones. La función valida cada valor.
+- **Inventario:** las existencias no se almacenan. La réplica del administrador las calcula con `vista_existencias`; el servidor expone `existencias_municipio` (existencia y `comprometido` = pedidos *Aprobado*) para quienes no pueden leer `movimientos`.
+- **Entradas y salidas:** una entrada siempre nace de una recolección (`id_recoleccion`); una salida puede venir de un pedido entregado (`id_pedido`) o ser manual. `chk_movimiento_origen` lo garantiza.
+- **Triggers en PostgreSQL:** `trg_movimiento_validar` (unidad y municipio coinciden con el material; una salida no supera las existencias), `trg_solicitud_estado` y `trg_pedido_estado` (transiciones válidas).
 
 ---
 
@@ -239,8 +259,8 @@ Notas:
 |---|---|
 | Supabase Auth | Identidad: verifica la firma del token de Google y el nonce |
 | `GRANT` | `anon` no tiene acceso a nada. `authenticated` solo puede hacer `SELECT` en las tablas y ejecutar las funciones listadas |
-| RLS (lectura) | Qué filas ve cada cuenta (tabla siguiente) |
-| Funciones `security definer` | Únicas que escriben. Empiezan con `exigir('permiso')` y validan propiedad y estado |
+| RLS (lectura) | Qué filas ve cada cuenta, siempre dentro de su municipio (tabla siguiente) |
+| Funciones `security definer` | Únicas que escriben. Empiezan con `exigir('permiso')` y validan municipio, propiedad y estado |
 | Constraints y triggers | Integridad aunque una función tuviera un error |
 | Interfaz (`data-permiso`, `Eco.Sesion.exigir`) | Solo comodidad: oculta opciones. **No** es una barrera de seguridad |
 
@@ -248,11 +268,15 @@ Notas:
 
 | Tabla | Quién puede leer |
 |---|---|
+| `departamentos`, `municipios` | Cualquiera (también `anon`) |
 | `roles`, `permisos`, `roles_permisos` | Cualquier sesión |
-| `usuarios`, `perfiles`, `empresas`, `necesidades_empresa`, `publicaciones`, `fotos_publicacion` | Cuentas registradas y activas (`yo() is not null`) |
-| `materiales`, `recolecciones`, `movimientos` | Permiso `inventario.gestionar` |
-| `ofertas` | El comprador, el vendedor de la publicación o quien tenga `mercado.supervisar` |
-| `transacciones` | Quien pueda ver la oferta correspondiente |
+| `usuarios`, `perfiles` | `puede_ver_usuario(id)`: uno mismo; el administrador, todo su municipio; todos, a los administradores de su municipio; ciudadano y repartidor de una misma solicitud, entre sí |
+| `materiales`, vista `existencias_municipio` | Cuentas activas del mismo municipio |
+| `solicitudes_recoleccion` | El ciudadano que la creó, el repartidor asignado y el administrador del municipio (`solicitudes.gestionar`) |
+| `recolecciones` | El administrador del municipio y el repartidor que la registró |
+| `movimientos` | Solo el administrador del municipio (`inventario.gestionar`) |
+| `empresas` | La propia empresa y el administrador del municipio |
+| `pedidos_empresa` | La empresa que lo hizo y el administrador del municipio (`pedidos.gestionar`) |
 | `correos_administradores` | Nadie desde la API |
 
 ### Funciones auxiliares
@@ -260,12 +284,13 @@ Notas:
 - `yo()`: el `id_usuario` de la sesión actual, solo si está activa.
 - `tiene_permiso(codigo)`: consulta `roles_permisos` del rol de la cuenta.
 - `exigir(codigo)`: lanza "No tienes permiso…" si no se tiene el permiso, y devuelve `yo()`.
+- `mi_municipio()`, `municipio_de(id_usuario)`: código DANE de la cuenta actual o de otra.
+- `es_admin_de(municipio, permiso)`: tiene el permiso **y** es de ese municipio. Es la comprobación clave para que un administrador no toque otro municipio.
+- `existencia_material(id)`, `comprometido_material(id)`, `cantidad_texto(n)`: cálculos de inventario y formato para los mensajes.
 
 Todas son `security definer` con `set search_path = public`, para evitar la sustitución de objetos por `search_path`.
 
-### Storage
-
-Bucket público `fotos` (solo JPEG, máximo 2 MB). Cada cuenta solo puede subir o borrar dentro de su carpeta `<auth.uid()>/…`. El cliente reduce las fotos a 900 px y JPEG de calidad 0,78 antes de subirlas.
+La vista `existencias_municipio` se ejecuta con los permisos de su dueño (no de quien consulta) y filtra con `mi_municipio()`, así una empresa ve cuánto hay sin leer `movimientos`.
 
 ### Datos que nunca van al navegador
 El *client secret* de Google (solo en Supabase → Providers), la `service_role`/`secret` key de Supabase y la contraseña de la base. En `config.js` solo hay datos públicos por diseño: el Client ID y la clave *publishable/anon*, que es segura porque todo está protegido por RLS y `GRANT`.
@@ -278,25 +303,25 @@ Se llaman con `await Eco.Nube.rpc('nombre', { p_param: valor })`. Si fallan, lan
 
 | Función | Permiso | Parámetros | Efecto |
 |---|---|---|---|
-| `iniciar_sesion()` | sesión | — | `{estado: ok\|registro\|inactivo}`. Actualiza la foto y el último acceso; promueve los correos administradores |
-| `registrar_cuenta` | sesión sin cuenta | `p_tipo, p_ubicacion, p_telefono, p_razon_social, p_nit` | Crea `usuarios` + `perfiles` (+ `empresas`). Nombre único automático |
-| `actualizar_perfil` | `perfil.editar` | `p_telefono, p_ubicacion` | — |
-| `guardar_material` | `inventario.gestionar` | `p_id` (null = nuevo), `p_nombre, p_categoria, p_unidad, p_descripcion` | No permite cambiar la unidad si hay movimientos |
-| `eliminar_material` | `inventario.gestionar` | `p_id` | Solo sin movimientos |
-| `registrar_recoleccion` | `inventario.gestionar` | `p_id_material, p_id_responsable, p_cantidad, p_fecha, p_observaciones` | Recolección + movimiento de entrada |
-| `registrar_salida` | `inventario.gestionar` | ídem | Movimiento de salida (trigger de existencias) |
-| `guardar_publicacion` | `publicaciones.gestionar` | `p_id, p_tipo, p_nombre, p_descripcion, p_cantidad, p_unidad, p_precio, p_ubicacion, p_fotos text[]` | Crea o edita la publicación y reemplaza sus fotos |
-| `cambiar_estado_publicacion` | `publicaciones.gestionar` | `p_id, p_accion` (`retirar`\|`reactivar`) | Retirar rechaza las ofertas pendientes |
-| `eliminar_publicacion` | `publicaciones.gestionar` | `p_id` | Solo sin ofertas |
-| `enviar_oferta` | `ofertas.enviar` | `p_id_publicacion, p_cantidad, p_precio, p_mensaje` | Valida estado, propiedad, cantidad y unicidad |
-| `responder_oferta` | según la acción | `p_id, p_accion` (`aceptar`\|`rechazar`\|`cancelar`\|`completar`) | Aceptar descuenta la cantidad y crea la transacción; cancelar una aceptada la devuelve |
-| `guardar_empresa` | `empresa.gestionar` | `p_razon_social, p_nit, p_telefono, p_correo, p_direccion, p_ciudad, p_descripcion` | Crea o actualiza (`on conflict`) |
-| `guardar_necesidad` | `empresa.gestionar` | `p_id, p_tipo, p_descripcion, p_minima, p_maxima, p_unidad, p_precio` | — |
-| `accion_necesidad` | `empresa.gestionar` | `p_id, p_accion` (`estado`\|`eliminar`) | — |
-| `admin_estado_usuario` | `usuarios.gestionar` | `p_id, p_activo` | No a sí mismo; siempre queda un administrador activo |
-| `admin_rol_usuario` | `usuarios.gestionar` | `p_id, p_rol` | Si deja de ser vendedor, rechaza sus ofertas pendientes |
+| `iniciar_sesion()` | sesión | — | `{estado: ok\|registro\|pendiente\|inactivo}`. En `registro` incluye `administrador: true/false`. Actualiza la foto y el último acceso |
+| `registrar_cuenta` | sesión sin cuenta | `p_tipo, p_codigo_municipio, p_direccion, p_telefono, p_razon_social, p_nit` | Crea `usuarios` + `perfiles` (+ `empresas`). Los correos autorizados quedan como `administrador` sin importar `p_tipo`; los repartidores quedan pendientes. Devuelve `{estado: ok\|pendiente}` |
+| `actualizar_perfil` | `perfil.editar` | `p_telefono, p_direccion` | Dirección obligatoria para ciudadanos; teléfono para repartidores |
+| `crear_solicitud` | `solicitudes.crear` | `p_direccion, p_tipos text[], p_descripcion, p_cantidad_estimada, p_fecha_preferida, p_franja` | Fecha entre hoy y 60 días; máximo 3 abiertas por ciudadano |
+| `cancelar_solicitud` | ciudadano dueño o administrador | `p_id, p_motivo` | Solo Pendiente/Asignada |
+| `asignar_solicitud` | `solicitudes.gestionar` | `p_id, p_id_repartidor` | Repartidor activo del mismo municipio; sirve también para reasignar |
+| `rechazar_solicitud` | `solicitudes.gestionar` | `p_id, p_motivo` | Motivo obligatorio |
+| `devolver_solicitud` | `recolecciones.realizar` | `p_id, p_motivo` | Asignada → Pendiente, quita al repartidor |
+| `completar_solicitud` | repartidor asignado o administrador | `p_id, p_detalle jsonb` (`[{id_material, cantidad}]`), `p_observaciones` | Por cada material: recolección + movimiento de entrada. Devuelve los kilos |
+| `guardar_material`, `eliminar_material` | `inventario.gestionar` | como antes | Siempre en `mi_municipio()`; nombre único por municipio |
+| `registrar_recoleccion` | `inventario.gestionar` | `p_id_material, p_id_responsable, p_cantidad, p_fecha, p_observaciones` | Responsable: administrador o repartidor activo del municipio |
+| `registrar_salida` | `inventario.gestionar` | ídem | No puede usar lo comprometido en pedidos aprobados |
+| `guardar_empresa` | `empresa.gestionar` | `p_razon_social, p_nit, p_telefono, p_correo, p_direccion, p_descripcion` | Crea o actualiza (`on conflict`) |
+| `crear_pedido` | `pedidos.crear` | `p_id_material, p_cantidad, p_precio, p_mensaje` | Cantidad ≤ existencia − comprometido; un pendiente por material |
+| `responder_pedido` | según la acción | `p_id, p_accion` (`aprobar`\|`rechazar`\|`entregar`\|`cancelar`), `p_respuesta` | Aprobar reserva; entregar crea la salida; cancelar solo la empresa |
+| `admin_estado_usuario` | `usuarios.gestionar` | `p_id, p_activo` | Solo su municipio; aprueba pendientes; desactivar un repartidor libera sus asignadas |
+| `admin_rol_usuario` | `usuarios.gestionar` | `p_id, p_rol` (`ciudadano`\|`repartidor`\|`administrador`) | Las empresas no cambian de tipo; siempre queda un administrador activo por municipio |
 
-Bloqueos: las funciones que modifican cantidades usan `select … for update` sobre la oferta y la publicación, así dos aceptaciones simultáneas no pueden vender el mismo material.
+Bloqueos: las funciones que cambian estados o cantidades usan `select … for update` sobre la solicitud, el pedido o el material, así dos administradores no pueden aprobar a la vez más material del que hay.
 
 ---
 
@@ -350,46 +375,47 @@ Reglas:
 
 - Los modales se declaran en `index.html` (`.modal-fondo`) y se abren con `Eco.App.abrirModal(id)`. Los botones con `data-cerrar-modal="id"` los cierran.
 - Para confirmar: `if (await Eco.App.confirmar({ titulo, mensaje, textoConfirmar, peligro })) { … }`.
+- Para pedir un motivo: `const motivo = await Eco.App.pedirTexto({ titulo, mensaje, campo, obligatorio, textoConfirmar })`. Devuelve el texto, o `null` si la persona cierra la ventana.
+- Selectores de lugar: `Eco.Comun.prepararLugares('id-departamento', 'id-municipio')` llena el departamento y carga los municipios al cambiarlo.
 
 ---
 
 ## 9. Cómo agregar una funcionalidad
 
-### Ejemplo A: el administrador puede retirar cualquier publicación (sin cambiar tablas)
+### Ejemplo A: el administrador puede cambiar la fecha de una solicitud (sin cambiar tablas)
 
-1. **Servidor:** crea `supabase/migraciones/001_admin_retirar.sql`:
+1. **Servidor:** crea `supabase/migraciones/001_reprogramar.sql`:
    ```sql
-   create or replace function public.admin_retirar_publicacion(p_id bigint) returns void
+   create or replace function public.reprogramar_solicitud(p_id bigint, p_fecha date) returns void
    language plpgsql security definer set search_path = public as $$
    begin
-       perform exigir('mercado.supervisar');
-       update ofertas set estado = 'Rechazada', fecha_respuesta = ahora_bogota()
-        where id_publicacion = p_id and estado = 'Pendiente';
-       update publicaciones set estado = 'Retirada', fecha_actualizacion = ahora_bogota()
-        where id_publicacion = p_id;
-       if not found then raise exception 'No se encontró la publicación.'; end if;
+       perform exigir('solicitudes.gestionar');
+       if p_fecha is null or p_fecha < hoy_bogota() then raise exception 'Elige una fecha desde hoy.'; end if;
+       update solicitudes_recoleccion set fecha_preferida = p_fecha
+        where id_solicitud = p_id and codigo_municipio = mi_municipio() and estado in ('Pendiente', 'Asignada');
+       if not found then raise exception 'La solicitud no existe o ya está cerrada.'; end if;
    end $$;
-   revoke execute on function public.admin_retirar_publicacion(bigint) from public, anon;
-   grant execute on function public.admin_retirar_publicacion(bigint) to authenticated;
+   revoke execute on function public.reprogramar_solicitud(bigint, date) from public, anon;
+   grant execute on function public.reprogramar_solicitud(bigint, date) to authenticated;
    ```
-   Ejecútalo en el SQL Editor de Supabase. Agrega la misma función a `esquema_supabase.sql` para instalaciones nuevas.
-2. **Cliente:** en `administracion.js → renderPublicaciones`, agrega un botón `data-accion="retirar"` y, en `init`, un listener que confirme y llame `await Eco.Nube.rpc('admin_retirar_publicacion', { p_id: id })` y luego `Eco.App.despuesDeCambio(…)`.
-3. **Pruebas:** agrega el caso a `pruebas/prueba_sql.sh`: que un no administrador reciba "No tienes permiso".
+   Ejecútalo en el SQL Editor de Supabase y agrega la misma función a `esquema_supabase.sql` (y su nombre a la lista de la sección 0) para instalaciones nuevas.
+2. **Cliente:** en `solicitudes.js → renderAdmin`, agrega un botón `data-accion="reprogramar"`; en `manejarAccion`, una función que pida la fecha y llame `await Eco.Nube.rpc('reprogramar_solicitud', { p_id, p_fecha })` y luego `Eco.App.despuesDeCambio(…)`.
+3. **Pruebas:** agrega a `pruebas/prueba_sql.sh` que un ciudadano reciba "No tienes permiso" y que el administrador de otro municipio no la encuentre.
 
 ### Ejemplo B: una tabla nueva
 
 1. Crea la tabla en una migración de Supabase con su RLS (`enable row level security` + política `for select`), `grant select … to authenticated` y las funciones que la escriban.
-2. Agrega la tabla equivalente en SQLite a `database/esquema_mercado.sql` (o `esquema.sql`) y regenera `js/datos_sql.js` con `node herramientas/generar_datos_sql.js`.
+2. Agrega la tabla equivalente en SQLite a `database/esquema_municipal.sql` (o `esquema.sql`) y regenera `js/datos_sql.js` con `node herramientas/generar_datos_sql.js`.
 3. Agrega su nombre a `TABLAS_REPLICA` en `js/database.js`, respetando el orden de dependencias.
 4. Si tiene una vista propia: agrega la `<section class="vista" id="vista-x">` en `index.html`, el ítem de menú con `data-permiso`, la entrada en `PERMISOS_VISTA` (`sesion.js`), el módulo en `refrescarTodo` (`app.js`) y su `init()` en `Eco.App.iniciar`.
 
 ### Agregar un permiso o cambiar los de un rol
 
 ```sql
-insert into permisos (codigo, descripcion) values ('reportes.mercado', 'Ver reportes del mercado');
+insert into permisos (codigo, descripcion) values ('reportes.consultar', 'Ver los reportes del centro de acopio');
 insert into roles_permisos (id_rol, id_permiso)
 select r.id_rol, p.id_permiso from roles r, permisos p
-where r.codigo = 'empresa' and p.codigo = 'reportes.mercado';
+where r.codigo = 'repartidor' and p.codigo = 'reportes.consultar';
 ```
 
 La interfaz lee los permisos de la réplica, así que el cambio se aplica en la siguiente sincronización.
@@ -398,12 +424,13 @@ La interfaz lee los permisos de la réplica, así que el cambio se aplica en la 
 
 ## 10. Cambios de esquema
 
-- **Supabase:** no vuelvas a ejecutar `esquema_supabase.sql` sobre una base con datos (falla en el primer `create table`). Escribe migraciones incrementales en `supabase/migraciones/NNN_descripcion.sql` (`alter table`, `create or replace function`…), ejecútalas en orden en el SQL Editor e incorpóralas también a `esquema_supabase.sql`.
-- **Réplica SQLite:** `js/datos_sql.js` es una copia de `database/esquema.sql` y `database/esquema_mercado.sql`, embebida porque el navegador no permite leer `.sql` con `fetch()` desde `file://`. Después de editar los `.sql`, regenérala:
+- **Supabase:** `esquema_supabase.sql` empieza borrando las tablas (sección 0), así que **ejecutarlo sobre una base con datos los borra**. Sirve para instalar o para pasar de la versión 4 a la 5. Escribe migraciones incrementales en `supabase/migraciones/NNN_descripcion.sql` (`alter table`, `create or replace function`…), ejecútalas en orden en el SQL Editor e incorpóralas también a `esquema_supabase.sql`.
+- **Réplica SQLite:** `js/datos_sql.js` es una copia de `database/esquema.sql` y `database/esquema_municipal.sql`, embebida porque el navegador no permite leer `.sql` con `fetch()` desde `file://`. Después de editar los `.sql`, regenérala:
   ```bash
   node herramientas/generar_datos_sql.js
   ```
 - Las columnas que existan en Supabase pero no en la réplica simplemente no se descargan. Para mostrarlas, agrégalas también a la réplica.
+- **Municipios:** si el DANE crea o renombra uno, edita `datos/divipola.csv` y ejecuta `node herramientas/generar_datos_sql.js` (actualiza `js/lugares.js` y el bloque `DIVIPOLA` del esquema). En una base existente agrega la fila con `insert into municipios values ('CÓDIGO', 'DEP', 'Nombre');`.
 
 ---
 
@@ -423,7 +450,7 @@ SUPABASE_URL: 'https://<proyecto>.supabase.co',
 SUPABASE_ANON_KEY: 'sb_publishable_…'      // o la clave anon (eyJ…)
 ```
 
-**Supabase:** proveedor Google activo con el Client ID (y el secreto de Google), esquema creado con `supabase/esquema_supabase.sql`. Los administradores iniciales están en `correos_administradores`.
+**Supabase:** proveedor Google activo con el Client ID (y el secreto de Google), esquema creado con `supabase/esquema_supabase.sql`. Los administradores iniciales están en `correos_administradores`; cada uno elige su municipio al registrarse.
 
 **Despliegue:** GitHub Pages publica la rama `main` desde la raíz. Cada `git push` a `main` se publica en uno o dos minutos. Los navegadores pueden conservar JavaScript en caché: pide a los usuarios **Ctrl + F5** tras cambios grandes, o agrega un sufijo de versión a los `<script src="js/x.js?v=5">`.
 
@@ -433,8 +460,8 @@ SUPABASE_ANON_KEY: 'sb_publishable_…'      // o la clave anon (eyJ…)
 
 Ver [`pruebas/README.md`](../pruebas/README.md). Resumen:
 
-- `pruebas/prueba_sql.sh`: funciones y RLS actuando como cinco usuarios.
-- `pruebas/prueba_e2e.js`: 30 comprobaciones en cuatro navegadores simultáneos (registro, fotos, ofertas, transacciones, permisos, desactivación y persistencia de la sesión).
+- `pruebas/prueba_sql.sh`: funciones y RLS actuando como siete usuarios de dos municipios (administradores, ciudadanos, repartidor, empresa e intruso).
+- `pruebas/prueba_e2e.js`: 44 comprobaciones en cinco navegadores simultáneos: registro con DIVIPOLA, aprobación del repartidor, solicitud → asignación → kilos → inventario, pedido → aprobación → entrega, aislamiento entre municipios, permisos, desactivación y persistencia de la sesión.
 
 Antes de publicar un cambio en las funciones del servidor, ejecuta ambas pruebas sobre una base local recién creada.
 
@@ -446,7 +473,7 @@ Antes de publicar un cambio en las funciones del servidor, ejecuta ambas pruebas
 - **JavaScript:** IIFE con `'use strict'`, un objeto por módulo en `window.Eco`, 4 espacios, comillas simples, `const`/`let`, `async/await`.
 - **SQL:** palabras clave en mayúsculas en SQLite y en minúsculas en PostgreSQL (como en cada archivo); siempre consultas parametrizadas (`?` en la réplica, parámetros `p_…` en las funciones).
 - **Mensajes:** en segunda persona, concretos y con la solución ("La cantidad no puede superar lo disponible (40 kg).").
-- **CSS:** tokens de `:root` en `estilos.css`; los componentes nuevos van en `mercado.css`. No uses colores sueltos fuera de los tokens, salvo las insignias por tipo de residuo.
+- **CSS:** tokens de `:root` en `estilos.css`; los componentes nuevos van en `componentes.css`. No uses colores sueltos fuera de los tokens, salvo las insignias por tipo de residuo.
 - **Accesibilidad:** `aria-label` en botones con solo un icono, foco visible, `aria-live` en los contadores, contraste AA.
 
 ---
@@ -457,11 +484,13 @@ Antes de publicar un cambio en las funciones del servidor, ejecuta ambas pruebas
 |---|---|---|
 | Actualización | Consulta cada 30 s (polling) | Supabase Realtime para recibir los cambios al instante |
 | Volumen | Cada sincronización descarga todo lo visible | Sincronización incremental por `fecha_actualizacion`, o consultas paginadas en el servidor para los listados grandes |
-| Fotos huérfanas | Al editar o eliminar una publicación, los archivos viejos quedan en Storage | Borrarlos en el cliente (`DELETE /storage/v1/object/fotos/…`) o con una tarea programada |
-| Privacidad de contacto | Las cuentas registradas ven el correo y el teléfono de las demás | Mostrar el contacto solo a las partes de una oferta aceptada |
+| Rutas | Las solicitudes se ordenan por fecha y franja | Mapa con la ruta del día (geocodificación de direcciones) |
+| Notificaciones | El ciudadano ve el cambio de estado al entrar | Correo o WhatsApp al asignar y al recolectar |
+| Fotos | Las solicitudes no llevan foto | Reutilizar Supabase Storage para una foto del material separado |
+| Cambio de municipio | Solo por SQL | Función administrativa que traslade la cuenta sin mezclar historiales |
 | Cuentas | No hay eliminación desde la interfaz (solo desactivar) | Función `admin_eliminar_cuenta` que anonimice los datos personales |
 | Centro de acopio | No se editan ni anulan recolecciones o salidas | Movimientos de ajuste con justificación |
-| Abuso | No hay límite de solicitudes por usuario | Límites de Supabase / Edge Functions |
+| Abuso | Máximo 3 solicitudes abiertas por ciudadano | Límites de Supabase / Edge Functions |
 | CI | Las pruebas se ejecutan a mano | GitHub Actions con un servicio de PostgreSQL |
 
 ---

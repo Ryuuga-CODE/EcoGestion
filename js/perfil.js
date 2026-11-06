@@ -7,7 +7,7 @@
     'use strict';
 
     const Eco = window.Eco = window.Eco || {};
-    const CAMPOS = ['perfil-telefono', 'perfil-ubicacion'];
+    const CAMPOS = ['perfil-telefono', 'perfil-direccion'];
 
     function render() {
         const usuario = Eco.Sesion.usuarioActual();
@@ -22,9 +22,12 @@
         document.getElementById('perfil-metodo').textContent = 'Cuenta de Google';
 
         const formulario = document.getElementById('form-perfil');
+        document.getElementById('perfil-municipio').value = Eco.Lugares.nombre(usuario.codigo_municipio);
+        document.getElementById('perfil-direccion-opcional').hidden = Eco.Sesion.tiene('solicitudes.crear');
+        document.getElementById('perfil-telefono-opcional').hidden = Eco.Sesion.tiene('recolecciones.realizar');
         if (!formulario.contains(document.activeElement)) {
             document.getElementById('perfil-telefono').value = usuario.telefono || '';
-            document.getElementById('perfil-ubicacion').value = usuario.ubicacion || '';
+            document.getElementById('perfil-direccion').value = usuario.direccion || '';
         }
 
         const permisos = Eco.DB.consultar(
@@ -50,20 +53,26 @@
         }
         Eco.Util.limpiarErroresCampos(CAMPOS);
         const telefono = document.getElementById('perfil-telefono').value.trim();
-        const ubicacion = document.getElementById('perfil-ubicacion').value.replace(/\s+/g, ' ').trim();
+        const direccion = document.getElementById('perfil-direccion').value.replace(/\s+/g, ' ').trim();
         let valido = true;
         if (telefono && !/^[0-9+()\s-]{7,30}$/.test(telefono)) {
             Eco.Util.mostrarErrorCampo('perfil-telefono', 'Escribe un teléfono válido (solo números, espacios, +, - o paréntesis).');
             valido = false;
+        } else if (!telefono && Eco.Sesion.tiene('recolecciones.realizar')) {
+            Eco.Util.mostrarErrorCampo('perfil-telefono', 'Los repartidores deben tener un teléfono de contacto.');
+            valido = false;
         }
-        if (ubicacion.length < 2 || ubicacion.length > 120) {
-            Eco.Util.mostrarErrorCampo('perfil-ubicacion', 'Indica tu ciudad y barrio (entre 2 y 120 caracteres).');
+        if (Eco.Sesion.tiene('solicitudes.crear') && direccion.length < 5) {
+            Eco.Util.mostrarErrorCampo('perfil-direccion', 'Escribe tu dirección y barrio (mínimo 5 caracteres).');
+            valido = false;
+        } else if (direccion.length > 150) {
+            Eco.Util.mostrarErrorCampo('perfil-direccion', 'La dirección no puede superar 150 caracteres.');
             valido = false;
         }
         if (!valido) return;
 
         try {
-            await Eco.Nube.rpc('actualizar_perfil', { p_telefono: telefono || null, p_ubicacion: ubicacion });
+            await Eco.Nube.rpc('actualizar_perfil', { p_telefono: telefono || null, p_direccion: direccion || null });
             document.activeElement.blur();
             await Eco.App.despuesDeCambio('Perfil actualizado.');
         } catch (error) {

@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="EcoGestión: sistema local de gestión de residuos aprovechables con SQLite en el navegador.">
+    <meta name="description" content="EcoGestión: gestión municipal de residuos aprovechables. Ciudadanos, repartidores, centro de acopio y empresas recicladoras.">
     <title>EcoGestión · Gestión de residuos aprovechables</title>
     <link rel="stylesheet" href="css/estilos.css">
-    <link rel="stylesheet" href="css/mercado.css">
+    <link rel="stylesheet" href="css/componentes.css">
 </head>
 <body>
     <a class="saltar-contenido" href="#contenido-principal">Saltar al contenido principal</a>
@@ -212,30 +212,45 @@
             </div>
             <div class="marca-texto">
                 <strong>EcoGestión</strong>
-                <span>Residuos aprovechables</span>
+                <span id="marca-municipio">Residuos aprovechables</span>
             </div>
         </div>
 
         <nav class="menu" aria-label="Módulos del sistema">
-            <p class="menu-titulo" data-permiso="inventario.gestionar">Operación</p>
+            <p class="menu-titulo" data-permiso="solicitudes.gestionar">Gestión municipal</p>
             <button type="button" class="menu-item activo" data-vista="panel" data-permiso="inventario.gestionar" aria-current="page">
                 <svg class="icono" aria-hidden="true"><use href="#i-panel"></use></svg>
                 <span>Panel principal</span>
             </button>
+            <button type="button" class="menu-item" data-vista="solicitudes" data-permiso="solicitudes.gestionar">
+                <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                <span>Solicitudes</span>
+                <span class="menu-contador" id="menu-contador-solicitudes" hidden></span>
+            </button>
+            <button type="button" class="menu-item" data-vista="pedidos" data-permiso="pedidos.gestionar">
+                <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
+                <span>Pedidos de empresas</span>
+                <span class="menu-contador" id="menu-contador-pedidos" hidden></span>
+            </button>
+            <button type="button" class="menu-item" data-vista="administracion" data-permiso="usuarios.gestionar">
+                <svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg>
+                <span>Usuarios</span>
+                <span class="menu-contador" id="menu-contador-usuarios" hidden></span>
+            </button>
+
+            <p class="menu-titulo menu-titulo-secundario" data-permiso="inventario.gestionar">Centro de acopio</p>
             <button type="button" class="menu-item" data-vista="materiales" data-permiso="inventario.gestionar">
                 <svg class="icono" aria-hidden="true"><use href="#i-caja"></use></svg>
                 <span>Materiales</span>
             </button>
             <button type="button" class="menu-item" data-vista="recolecciones" data-permiso="inventario.gestionar">
-                <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                <svg class="icono" aria-hidden="true"><use href="#i-reciclar"></use></svg>
                 <span>Recolecciones</span>
             </button>
             <button type="button" class="menu-item" data-vista="inventario" data-permiso="inventario.gestionar">
                 <svg class="icono" aria-hidden="true"><use href="#i-almacen"></use></svg>
                 <span>Inventario</span>
             </button>
-
-            <p class="menu-titulo menu-titulo-secundario" data-permiso="inventario.gestionar">Análisis</p>
             <button type="button" class="menu-item" data-vista="historial" data-permiso="inventario.gestionar">
                 <svg class="icono" aria-hidden="true"><use href="#i-historial"></use></svg>
                 <span>Historial</span>
@@ -245,30 +260,23 @@
                 <span>Reportes</span>
             </button>
 
-            <!-- Ampliación: mercado, administración y cuenta -->
-            <p class="menu-titulo menu-titulo-secundario" data-permiso="mercado.consultar">Mercado</p>
-            <button type="button" class="menu-item" data-vista="mercado" data-permiso="mercado.consultar">
-                <svg class="icono" aria-hidden="true"><use href="#i-mercado"></use></svg>
-                <span>Mercado</span>
-            </button>
-            <button type="button" class="menu-item" data-vista="publicaciones" data-permiso="publicaciones.gestionar">
-                <svg class="icono" aria-hidden="true"><use href="#i-etiqueta"></use></svg>
-                <span>Mis publicaciones</span>
-            </button>
-            <button type="button" class="menu-item" data-vista="ofertas" data-permiso="ofertas.recibir ofertas.enviar">
-                <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                <span>Ofertas</span>
-                <span class="menu-contador" id="menu-contador-ofertas" hidden></span>
-            </button>
-            <button type="button" class="menu-item" data-vista="empresa" data-permiso="empresa.gestionar">
-                <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
-                <span>Panel empresarial</span>
+            <p class="menu-titulo" data-permiso="solicitudes.crear">Reciclaje en casa</p>
+            <button type="button" class="menu-item" data-vista="mis-solicitudes" data-permiso="solicitudes.crear">
+                <svg class="icono" aria-hidden="true"><use href="#i-hoja"></use></svg>
+                <span>Mis solicitudes</span>
             </button>
 
-            <p class="menu-titulo menu-titulo-secundario" data-permiso="usuarios.gestionar mercado.supervisar">Administración</p>
-            <button type="button" class="menu-item" data-vista="administracion" data-permiso="usuarios.gestionar mercado.supervisar">
-                <svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg>
-                <span>Usuarios y supervisión</span>
+            <p class="menu-titulo" data-permiso="recolecciones.realizar">Recolección</p>
+            <button type="button" class="menu-item" data-vista="rutas" data-permiso="recolecciones.realizar">
+                <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                <span>Mis rutas</span>
+                <span class="menu-contador" id="menu-contador-rutas" hidden></span>
+            </button>
+
+            <p class="menu-titulo" data-permiso="pedidos.crear">Empresa</p>
+            <button type="button" class="menu-item" data-vista="empresa" data-permiso="pedidos.crear empresa.gestionar">
+                <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
+                <span>Panel empresarial</span>
             </button>
 
             <p class="menu-titulo menu-titulo-secundario" data-permiso="perfil.editar">Cuenta</p>
@@ -352,13 +360,15 @@
                 <div class="bienvenida">
                     <div class="bienvenida-texto">
                         <span class="etiqueta">Resumen operativo</span>
-                        <h2>Material aprovechable bajo control.</h2>
+                        <h2 id="bienvenida-titulo">Material aprovechable bajo control.</h2>
                         <p id="bienvenida-detalle">Consulta el estado del inventario y la actividad más reciente.</p>
                     </div>
                     <div class="bienvenida-icono" aria-hidden="true">
                         <svg><use href="#i-hoja-doble"></use></svg>
                     </div>
                 </div>
+
+                <div class="pendientes-municipio" id="panel-municipio"></div>
 
                 <div class="grid-kpis">
                     <article class="kpi">
@@ -812,522 +822,168 @@
             </section>
 
             <!-- =========== AMPLIACIÓN: CUENTAS Y MERCADO =========== -->
-            <!-- ============ MERCADO ============ -->
-            <section class="vista" id="vista-mercado" data-titulo="Mercado" data-subtitulo="Materiales aprovechables publicados por los vendedores">
-                <div class="encabezado-vista">
-                    <div>
-                        <h2>Mercado de materiales</h2>
-                        <p>Compra directamente a quienes separan y recolectan residuos aprovechables.</p>
-                    </div>
-                    <button type="button" class="boton boton-primario" id="btn-mercado-publicar" data-permiso="publicaciones.gestionar">
-                        <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
-                        Publicar material
-                    </button>
-                </div>
-
-                <div class="pestanas" role="tablist" aria-label="Secciones del mercado">
-                    <button type="button" class="pestana activa" role="tab" data-pestana="publicaciones" aria-selected="true">Publicaciones</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="necesidades" aria-selected="false">Necesidades de empresas</button>
-                </div>
-
-                <div class="tarjeta tarjeta-filtros">
-                    <div class="chips-filtro" id="mercado-tipos" role="group" aria-label="Filtrar por tipo de residuo"></div>
-                    <div class="barra-herramientas barra-herramientas-mercado">
-                        <div class="buscador" id="mercado-herramientas-publicaciones">
-                            <svg class="icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
-                            <input type="search" id="mercado-buscar" placeholder="Buscar material…" autocomplete="off" aria-label="Buscar material">
-                        </div>
-                        <div class="buscador">
-                            <svg class="icono" aria-hidden="true"><use href="#i-ubicacion"></use></svg>
-                            <input type="search" id="mercado-ubicacion" placeholder="Ciudad o barrio…" autocomplete="off" aria-label="Filtrar por ubicación">
-                        </div>
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="mercado-orden" aria-label="Ordenar publicaciones">
-                                <option value="recientes">Más recientes</option>
-                                <option value="precio-asc">Menor precio</option>
-                                <option value="precio-desc">Mayor precio</option>
-                                <option value="cantidad">Mayor cantidad</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="mercado-panel-publicaciones">
-                    <div class="fila-conteo">
-                        <span class="contador-resultados" id="mercado-conteo" aria-live="polite">0 publicaciones</span>
-                        <button type="button" class="chip-activo" id="mercado-filtro-vendedor" hidden>
-                            <span></span>
-                            <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
-                        </button>
-                    </div>
-                    <div class="grid-publicaciones" id="mercado-grid"></div>
-                    <div class="tarjeta estado-vacio" id="mercado-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-mercado"></use></svg>
-                        <h3>No hay publicaciones con esos filtros</h3>
-                        <p>Prueba con otro tipo de residuo o con otra ubicación.</p>
-                    </div>
-                </div>
-
-                <div id="mercado-panel-necesidades" hidden>
-                    <div class="fila-conteo">
-                        <span class="contador-resultados" id="necesidades-conteo" aria-live="polite">0 necesidades</span>
-                    </div>
-                    <div class="grid-publicaciones" id="necesidades-grid"></div>
-                    <div class="tarjeta estado-vacio" id="necesidades-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
-                        <h3>No hay necesidades publicadas</h3>
-                        <p>Las empresas recicladoras publican aquí los materiales que quieren comprar.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============ MIS PUBLICACIONES ============ -->
-            <section class="vista" id="vista-publicaciones" data-titulo="Mis publicaciones" data-subtitulo="Materiales que ofreces en el mercado">
-                <div class="encabezado-vista">
-                    <div>
-                        <h2>Mis publicaciones</h2>
-                        <p>Publica, edita o retira los materiales que ofreces.</p>
-                    </div>
-                    <button type="button" class="boton boton-primario" id="btn-nueva-publicacion">
-                        <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
-                        Nueva publicación
-                    </button>
-                </div>
-
-                <div class="fila-resumen fila-resumen-4">
-                    <div class="mini-card"><span class="mini-card-etiqueta">Publicaciones activas</span><strong id="pub-activas">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Ofertas por responder</span><strong id="pub-pendientes">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Ventas completadas</span><strong id="pub-ventas">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Ingresos por ventas</span><strong id="pub-ingresos">$ 0</strong></div>
-                </div>
-
-                <div class="tarjeta">
-                    <div class="tabla-contenedor">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Material</th>
-                                    <th>Tipo</th>
-                                    <th class="texto-derecha">Disponible</th>
-                                    <th class="texto-derecha">Precio</th>
-                                    <th>Estado</th>
-                                    <th class="texto-derecha">Ofertas</th>
-                                    <th class="texto-derecha">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-publicaciones-body"></tbody>
-                        </table>
-                    </div>
-                    <div class="estado-vacio" id="publicaciones-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-etiqueta"></use></svg>
-                        <h3>Aún no tienes publicaciones</h3>
-                        <p>Usa “Nueva publicación” para ofrecer tu primer material.</p>
-                    </div>
-                </div>
-                <p class="nota-pie">
-                    <svg class="icono" aria-hidden="true"><use href="#i-info"></use></svg>
-                    Una publicación que ya recibió ofertas no se puede eliminar, para conservar el historial; puedes retirarla del mercado.
-                </p>
-            </section>
-
-            <!-- ============ OFERTAS ============ -->
-            <section class="vista" id="vista-ofertas" data-titulo="Ofertas" data-subtitulo="Negociaciones de compra y venta">
-                <div class="encabezado-vista">
-                    <div>
-                        <h2>Ofertas y negociaciones</h2>
-                        <p>Consulta el estado de cada oferta y responde a tiempo.</p>
-                    </div>
-                </div>
-
-                <div class="fila-resumen fila-resumen-4">
-                    <div class="mini-card"><span class="mini-card-etiqueta">Ofertas pendientes</span><strong id="ofertas-pendientes">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Operaciones en curso</span><strong id="ofertas-en-curso">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Operaciones completadas</span><strong id="ofertas-completadas">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta" id="ofertas-valor-etiqueta">Total</span><strong id="ofertas-valor">$ 0</strong></div>
-                </div>
-
-                <div class="pestanas" role="tablist" aria-label="Tipo de negociación">
-                    <button type="button" class="pestana" role="tab" data-pestana="recibidas">Ofertas recibidas</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="enviadas">Ofertas enviadas</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="operaciones"><span id="pestana-operaciones-texto">Historial</span></button>
-                </div>
-
-                <div class="tarjeta" id="ofertas-panel-recibidas" hidden>
-                    <div class="barra-herramientas">
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="filtro-recibidas" aria-label="Filtrar por estado">
-                                <option value="">Todos los estados</option>
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Aceptada">Aceptada</option>
-                                <option value="Rechazada">Rechazada</option>
-                                <option value="Cancelada">Cancelada</option>
-                                <option value="Completada">Completada</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="tabla-contenedor">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Comprador</th>
-                                    <th>Material</th>
-                                    <th class="texto-derecha">Cantidad</th>
-                                    <th class="texto-derecha">Oferta</th>
-                                    <th>Estado</th>
-                                    <th class="texto-derecha">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-recibidas-body"></tbody>
-                        </table>
-                    </div>
-                    <div class="estado-vacio" id="recibidas-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        <h3>No hay ofertas recibidas</h3>
-                        <p>Cuando un comprador oferte por tus publicaciones, aparecerá aquí.</p>
-                    </div>
-                </div>
-
-                <div class="tarjeta" id="ofertas-panel-enviadas" hidden>
-                    <div class="barra-herramientas">
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="filtro-enviadas" aria-label="Filtrar por estado">
-                                <option value="">Todos los estados</option>
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Aceptada">Aceptada</option>
-                                <option value="Rechazada">Rechazada</option>
-                                <option value="Cancelada">Cancelada</option>
-                                <option value="Completada">Completada</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="tabla-contenedor">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Material</th>
-                                    <th>Vendedor</th>
-                                    <th class="texto-derecha">Cantidad</th>
-                                    <th class="texto-derecha">Oferta</th>
-                                    <th>Estado</th>
-                                    <th class="texto-derecha">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-enviadas-body"></tbody>
-                        </table>
-                    </div>
-                    <div class="estado-vacio" id="enviadas-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        <h3>Aún no has enviado ofertas</h3>
-                        <p>Busca material en el Mercado y usa “Hacer oferta”.</p>
-                    </div>
-                </div>
-
-                <div class="tarjeta" id="ofertas-panel-operaciones" hidden>
-                    <div class="barra-herramientas">
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="filtro-operaciones" aria-label="Filtrar por estado de la operación">
-                                <option value="">Todos los estados</option>
-                                <option value="En curso">En curso</option>
-                                <option value="Completada">Completada</option>
-                                <option value="Cancelada">Cancelada</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="tabla-contenedor">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Acuerdo</th>
-                                    <th>Tipo</th>
-                                    <th>Material</th>
-                                    <th>Contraparte</th>
-                                    <th class="texto-derecha">Cantidad</th>
-                                    <th class="texto-derecha">Total</th>
-                                    <th>Estado</th>
-                                    <th>Cierre</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-operaciones-body"></tbody>
-                        </table>
-                    </div>
-                    <div class="estado-vacio" id="operaciones-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-historial"></use></svg>
-                        <h3>Sin operaciones registradas</h3>
-                        <p>Una operación se registra cuando el vendedor acepta una oferta.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============ PANEL EMPRESARIAL ============ -->
-            <section class="vista" id="vista-empresa" data-titulo="Panel empresarial" data-subtitulo="Compras de la empresa recicladora">
-                <div class="encabezado-vista">
-                    <div>
-                        <h2>Panel empresarial</h2>
-                        <p>Publica los materiales que necesitas y encuentra vendedores.</p>
-                    </div>
-                    <button type="button" class="boton boton-secundario" id="btn-empresa-ver-ofertas">
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        Ver ofertas y compras
-                    </button>
-                </div>
-
-                <div class="fila-resumen fila-resumen-4">
-                    <div class="mini-card"><span class="mini-card-etiqueta">Ofertas pendientes</span><strong id="empresa-pendientes">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Compras en curso</span><strong id="empresa-en-curso">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Compras realizadas</span><strong id="empresa-completadas">0</strong></div>
-                    <div class="mini-card"><span class="mini-card-etiqueta">Total comprado</span><strong id="empresa-invertido">$ 0</strong></div>
-                </div>
-
-                <article class="tarjeta">
-                    <div class="tarjeta-cabecera">
-                        <div>
-                            <h3>Necesidades de materiales</h3>
-                            <p>Los vendedores las ven en el Mercado, pestaña “Necesidades de empresas”.</p>
-                        </div>
-                        <button type="button" class="boton boton-primario boton-pequeno" id="btn-nueva-necesidad">
+            <!-- ============ MIS SOLICITUDES (ciudadano) ============ -->
+            <section class="vista" id="vista-mis-solicitudes" data-titulo="Mis solicitudes" data-subtitulo="Recolección de tus residuos separados">
+                <div class="bienvenida bienvenida-ciudadano">
+                    <div class="bienvenida-texto">
+                        <span class="etiqueta" id="ciudadano-municipio">Tu municipio</span>
+                        <h2>Separa en casa, nosotros lo recogemos.</h2>
+                        <p>Pide la recolección de tus residuos aprovechables. El municipio asigna un repartidor y aquí ves en qué va tu solicitud.</p>
+                        <button type="button" class="boton boton-primario" id="btn-nueva-solicitud">
                             <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
-                            Publicar necesidad
+                            Solicitar recolección
                         </button>
                     </div>
-                    <div class="tabla-contenedor">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Material</th>
-                                    <th class="texto-derecha">Cantidad (mín. – máx.)</th>
-                                    <th class="texto-derecha">Precio ofrecido</th>
-                                    <th>Estado</th>
-                                    <th class="texto-derecha">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-necesidades-body"></tbody>
-                        </table>
+                    <div class="bienvenida-icono" aria-hidden="true">
+                        <svg><use href="#i-camion"></use></svg>
                     </div>
-                    <div class="estado-vacio compacto" id="necesidades-propias-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
-                        <h3>Sin necesidades publicadas</h3>
-                        <p>Indica qué materiales compras, en qué cantidades y a qué precio.</p>
+                </div>
+
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">En espera</span><strong id="ciudadano-pendientes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Con repartidor</span><strong id="ciudadano-asignadas">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Recolectadas</span><strong id="ciudadano-recolectadas">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Kilos aprovechados</span><strong id="ciudadano-kilos">0 kg</strong></div>
+                </div>
+
+                <div class="grid-solicitudes" id="lista-mis-solicitudes"></div>
+                <div class="estado-vacio" id="mis-solicitudes-vacio" hidden>
+                    <svg class="icono" aria-hidden="true"><use href="#i-hoja"></use></svg>
+                    <h3>Todavía no has pedido una recolección</h3>
+                    <p>Separa plástico, papel y cartón, vidrio y metal, limpios y secos, y pulsa “Solicitar recolección”.</p>
+                </div>
+
+                <article class="tarjeta tarjeta-separada">
+                    <div class="tarjeta-cabecera tarjeta-cabecera-simple">
+                        <div>
+                            <h3>Cómo separar</h3>
+                            <p>Material limpio y seco se aprovecha mejor.</p>
+                        </div>
+                    </div>
+                    <div class="guia-separacion">
+                        <div><span class="insignia insignia-tipo" data-tipo="Plástico">Plástico</span><p>Botellas, envases y bolsas. Enjuágalos y aplasta las botellas.</p></div>
+                        <div><span class="insignia insignia-tipo" data-tipo="Papel y cartón">Papel y cartón</span><p>Cajas, periódico y hojas. Secos, doblados y sin grasa.</p></div>
+                        <div><span class="insignia insignia-tipo" data-tipo="Vidrio">Vidrio</span><p>Botellas y frascos sin tapa. Envuelve los vidrios rotos.</p></div>
+                        <div><span class="insignia insignia-tipo" data-tipo="Metal">Metal</span><p>Latas, tapas y chatarra pequeña. Vacías y limpias.</p></div>
                     </div>
                 </article>
-
-                <div class="grid-panel grid-empresa tarjeta-separada">
-                    <article class="tarjeta">
-                        <div class="tarjeta-cabecera tarjeta-cabecera-simple">
-                            <div>
-                                <h3>Perfil empresarial</h3>
-                                <p>Datos de contacto que verán los vendedores.</p>
-                            </div>
-                        </div>
-                        <p class="aviso-formulario" id="empresa-aviso-sin-perfil" hidden>
-                            <svg class="icono" aria-hidden="true"><use href="#i-info"></use></svg>
-                            Tu cuenta aún no tiene perfil empresarial. Complétalo para publicar necesidades.
-                        </p>
-                        <form id="form-empresa" class="form-tarjeta" novalidate>
-                            <div class="form-grid">
-                                <div class="campo campo-completo">
-                                    <label for="empresa-razon">Nombre o razón social <span class="obligatorio">*</span></label>
-                                    <input type="text" id="empresa-razon" maxlength="120" autocomplete="organization">
-                                    <small class="error-campo" id="error-empresa-razon"></small>
-                                </div>
-                                <div class="campo">
-                                    <label for="empresa-nit">NIT <span class="opcional">(opcional)</span></label>
-                                    <input type="text" id="empresa-nit" maxlength="20" placeholder="900123456-7">
-                                    <small class="error-campo" id="error-empresa-nit"></small>
-                                </div>
-                                <div class="campo">
-                                    <label for="empresa-telefono">Teléfono</label>
-                                    <input type="tel" id="empresa-telefono" maxlength="30" autocomplete="tel">
-                                    <small class="error-campo" id="error-empresa-telefono"></small>
-                                </div>
-                                <div class="campo">
-                                    <label for="empresa-correo">Correo de contacto</label>
-                                    <input type="email" id="empresa-correo" maxlength="120" autocomplete="email">
-                                    <small class="error-campo" id="error-empresa-correo"></small>
-                                </div>
-                                <div class="campo">
-                                    <label for="empresa-ciudad">Ciudad <span class="obligatorio">*</span></label>
-                                    <input type="text" id="empresa-ciudad" maxlength="80">
-                                    <small class="error-campo" id="error-empresa-ciudad"></small>
-                                </div>
-                                <div class="campo campo-completo">
-                                    <label for="empresa-direccion">Dirección <span class="opcional">(opcional)</span></label>
-                                    <input type="text" id="empresa-direccion" maxlength="150" autocomplete="street-address">
-                                    <small class="error-campo" id="error-empresa-direccion"></small>
-                                </div>
-                                <div class="campo campo-completo">
-                                    <label for="empresa-descripcion">Qué hace la empresa <span class="opcional">(opcional)</span></label>
-                                    <textarea id="empresa-descripcion" rows="3" maxlength="400"></textarea>
-                                    <small class="error-campo" id="error-empresa-descripcion"></small>
-                                </div>
-                            </div>
-                            <div class="acciones-formulario">
-                                <button type="submit" class="boton boton-primario">
-                                    <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
-                                    <span id="btn-guardar-empresa-texto">Guardar cambios</span>
-                                </button>
-                            </div>
-                        </form>
-                    </article>
-                    <article class="tarjeta">
-                        <div class="tarjeta-cabecera">
-                            <div>
-                                <h3>Buscar vendedores</h3>
-                                <p>Vendedores con publicaciones activas en el mercado.</p>
-                            </div>
-                        </div>
-                        <div class="barra-herramientas">
-                            <div class="selector-filtro">
-                                <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                                <select id="vendedores-tipo" aria-label="Filtrar vendedores por tipo de residuo"></select>
-                            </div>
-                            <div class="buscador">
-                                <svg class="icono" aria-hidden="true"><use href="#i-ubicacion"></use></svg>
-                                <input type="search" id="vendedores-ubicacion" placeholder="Ciudad o barrio…" autocomplete="off" aria-label="Filtrar vendedores por ubicación">
-                            </div>
-                        </div>
-                        <div class="grid-vendedores" id="lista-vendedores"></div>
-                        <div class="estado-vacio compacto" id="vendedores-vacio" hidden>
-                            <svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg>
-                            <h3>No hay vendedores con esos filtros</h3>
-                            <p>Prueba con otro tipo de residuo o ubicación.</p>
-                        </div>
-                    </article>
-                </div>
             </section>
 
-            <!-- ============ ADMINISTRACIÓN ============ -->
-            <section class="vista" id="vista-administracion" data-titulo="Usuarios y supervisión" data-subtitulo="Administración de cuentas y del mercado">
+            <!-- ============ MIS RUTAS (repartidor) ============ -->
+            <section class="vista" id="vista-rutas" data-titulo="Mis rutas" data-subtitulo="Solicitudes asignadas para recoger">
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">Por recoger</span><strong id="rutas-asignadas">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Para hoy o antes</span><strong id="rutas-hoy">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Recogidas este mes</span><strong id="rutas-mes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Kilos este mes</span><strong id="rutas-kilos">0 kg</strong></div>
+                </div>
+
                 <div class="encabezado-vista">
                     <div>
-                        <h2>Administración</h2>
-                        <p>Gestiona las cuentas y supervisa la actividad del mercado.</p>
+                        <h2>Por recoger</h2>
+                        <p>Ordenadas por la fecha que pidió el ciudadano.</p>
                     </div>
                 </div>
-
-                <div class="pestanas" role="tablist" aria-label="Secciones de administración">
-                    <button type="button" class="pestana" role="tab" data-pestana="usuarios">Usuarios</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="publicaciones">Publicaciones</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="transacciones">Transacciones</button>
-                    <button type="button" class="pestana" role="tab" data-pestana="estadisticas">Estadísticas</button>
+                <div class="grid-solicitudes" id="lista-rutas"></div>
+                <div class="estado-vacio" id="rutas-vacio" hidden>
+                    <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                    <h3>No tienes recolecciones asignadas</h3>
+                    <p>Cuando el administrador te asigne una solicitud, aparecerá aquí.</p>
                 </div>
 
-                <div id="admin-panel-usuarios" hidden>
-                    <div class="fila-resumen fila-resumen-4">
-                        <div class="mini-card"><span class="mini-card-etiqueta">Administradores</span><strong id="admin-total-administrador">0</strong><small id="admin-activos-administrador"></small></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Vendedores</span><strong id="admin-total-vendedor">0</strong><small id="admin-activos-vendedor"></small></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Compradores</span><strong id="admin-total-comprador">0</strong><small id="admin-activos-comprador"></small></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Empresas recicladoras</span><strong id="admin-total-empresa">0</strong><small id="admin-activos-empresa"></small></div>
-                    </div>
-                    <div class="tarjeta">
-                        <div class="barra-herramientas">
-                            <div class="buscador">
-                                <svg class="icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
-                                <input type="search" id="admin-buscar-usuario" placeholder="Buscar por nombre, correo o empresa…" autocomplete="off" aria-label="Buscar usuario">
-                            </div>
-                            <div class="selector-filtro">
-                                <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                                <select id="admin-filtro-rol" aria-label="Filtrar por tipo de cuenta">
-                                    <option value="">Todos los tipos</option>
-                                    <option value="administrador">Administradores</option>
-                                    <option value="vendedor">Vendedores</option>
-                                    <option value="comprador">Compradores</option>
-                                    <option value="empresa">Empresas recicladoras</option>
-                                </select>
-                            </div>
-                            <div class="selector-filtro">
-                                <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                                <select id="admin-filtro-estado" aria-label="Filtrar por estado">
-                                    <option value="">Activos e inactivos</option>
-                                    <option value="1">Solo activos</option>
-                                    <option value="0">Solo inactivos</option>
-                                </select>
-                            </div>
-                            <span class="contador-resultados" id="usuarios-conteo" aria-live="polite">0 usuarios</span>
+                <article class="tarjeta tarjeta-separada">
+                    <div class="tarjeta-cabecera tarjeta-cabecera-simple">
+                        <div>
+                            <h3>Mis recolecciones</h3>
+                            <p>Lo que has llevado al centro de acopio.</p>
                         </div>
-                        <div class="tabla-contenedor">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Tipo de cuenta</th>
-                                        <th class="texto-derecha">Actividad</th>
-                                        <th>Último acceso</th>
-                                        <th>Estado</th>
-                                        <th class="texto-derecha">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabla-usuarios-body"></tbody>
-                            </table>
-                        </div>
-                        <div class="estado-vacio" id="usuarios-vacio" hidden>
-                            <svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg>
-                            <h3>No hay usuarios con esos filtros</h3>
-                            <p>Ajusta la búsqueda o los filtros.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tarjeta" id="admin-panel-publicaciones" hidden>
-                    <div class="barra-herramientas">
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="admin-pub-estado" aria-label="Filtrar por estado">
-                                <option value="">Todos los estados</option>
-                                <option value="Activa">Activa</option>
-                                <option value="Agotada">Agotada</option>
-                                <option value="Retirada">Retirada</option>
-                            </select>
-                        </div>
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="admin-pub-tipo" aria-label="Filtrar por tipo de residuo"></select>
-                        </div>
-                        <span class="contador-resultados" id="admin-publicaciones-conteo" aria-live="polite">0 publicaciones</span>
                     </div>
                     <div class="tabla-contenedor">
                         <table>
                             <thead>
                                 <tr>
+                                    <th>Fecha</th>
                                     <th>Material</th>
-                                    <th>Vendedor</th>
-                                    <th class="texto-derecha">Disponible</th>
-                                    <th class="texto-derecha">Precio</th>
-                                    <th class="texto-derecha">Ofertas</th>
-                                    <th>Estado</th>
-                                    <th>Publicada</th>
+                                    <th class="texto-derecha">Cantidad</th>
+                                    <th>Solicitud</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabla-admin-publicaciones-body"></tbody>
+                            <tbody id="tabla-rutas-historial"></tbody>
                         </table>
                     </div>
-                    <div class="estado-vacio" id="admin-publicaciones-vacio" hidden>
-                        <svg class="icono" aria-hidden="true"><use href="#i-etiqueta"></use></svg>
-                        <h3>No hay publicaciones con esos filtros</h3>
-                        <p>Ajusta los filtros.</p>
+                    <div class="estado-vacio compacto" id="rutas-historial-vacio" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-historial"></use></svg>
+                        <h3>Sin recolecciones todavía</h3>
+                        <p>Aquí verás cada material que registres.</p>
+                    </div>
+                </article>
+            </section>
+
+            <!-- ============ SOLICITUDES (administrador) ============ -->
+            <section class="vista" id="vista-solicitudes" data-titulo="Solicitudes de recolección" data-subtitulo="Pedidos de los ciudadanos del municipio">
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">Sin asignar</span><strong id="sol-pendientes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Asignadas</span><strong id="sol-asignadas">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Recolectadas este mes</span><strong id="sol-mes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Repartidores activos</span><strong id="sol-repartidores">0</strong></div>
+                </div>
+                <div class="tarjeta">
+                    <div class="barra-herramientas">
+                        <div class="chips-filtro" id="sol-filtro-estado" role="group" aria-label="Filtrar por estado">
+                            <button type="button" class="chip-filtro chip-activo" data-estado="abiertas">Abiertas</button>
+                            <button type="button" class="chip-filtro" data-estado="Pendiente">Sin asignar</button>
+                            <button type="button" class="chip-filtro" data-estado="Asignada">Asignadas</button>
+                            <button type="button" class="chip-filtro" data-estado="Recolectada">Recolectadas</button>
+                            <button type="button" class="chip-filtro" data-estado="cerradas">Canceladas y rechazadas</button>
+                        </div>
+                        <div class="buscador">
+                            <svg class="icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+                            <input type="search" id="sol-buscar" placeholder="Ciudadano, dirección o repartidor…" autocomplete="off" aria-label="Buscar solicitudes">
+                        </div>
+                        <span class="contador-resultados" id="sol-conteo" aria-live="polite">0 solicitudes</span>
+                    </div>
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Solicitud</th>
+                                    <th>Ciudadano y dirección</th>
+                                    <th>Residuos</th>
+                                    <th>Cuándo</th>
+                                    <th>Estado</th>
+                                    <th class="texto-derecha">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-solicitudes-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="estado-vacio" id="solicitudes-vacio" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                        <h3>No hay solicitudes con ese filtro</h3>
+                        <p>Las solicitudes nuevas de los ciudadanos aparecen en “Sin asignar”.</p>
                     </div>
                 </div>
+            </section>
 
-                <div class="tarjeta" id="admin-panel-transacciones" hidden>
+            <!-- ============ PEDIDOS DE EMPRESAS (administrador) ============ -->
+            <section class="vista" id="vista-pedidos" data-titulo="Pedidos de empresas" data-subtitulo="Venta del material recuperado a empresas recicladoras">
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">Por responder</span><strong id="ped-pendientes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Aprobados por entregar</span><strong id="ped-aprobados">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Entregados</span><strong id="ped-entregados">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Valor entregado</span><strong id="ped-valor">$ 0</strong></div>
+                </div>
+                <div class="tarjeta">
                     <div class="barra-herramientas">
-                        <div class="selector-filtro">
-                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
-                            <select id="admin-trans-estado" aria-label="Filtrar por estado de la oferta">
-                                <option value="">Todos los estados</option>
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Aceptada">Aceptada</option>
-                                <option value="Rechazada">Rechazada</option>
-                                <option value="Cancelada">Cancelada</option>
-                                <option value="Completada">Completada</option>
-                            </select>
+                        <div class="chips-filtro" id="ped-filtro-estado" role="group" aria-label="Filtrar por estado">
+                            <button type="button" class="chip-filtro chip-activo" data-estado="abiertos">Abiertos</button>
+                            <button type="button" class="chip-filtro" data-estado="Pendiente">Por responder</button>
+                            <button type="button" class="chip-filtro" data-estado="Aprobado">Aprobados</button>
+                            <button type="button" class="chip-filtro" data-estado="Entregado">Entregados</button>
+                            <button type="button" class="chip-filtro" data-estado="cerrados">Rechazados y cancelados</button>
                         </div>
-                        <span class="contador-resultados" id="admin-transacciones-conteo" aria-live="polite">0 negociaciones</span>
-                        <button type="button" class="boton boton-secundario boton-pequeno boton-derecha" id="btn-exportar-negociaciones">
+                        <span class="contador-resultados" id="ped-conteo" aria-live="polite">0 pedidos</span>
+                        <button type="button" class="boton boton-secundario boton-pequeno boton-derecha" id="btn-exportar-pedidos">
                             <svg class="icono" aria-hidden="true"><use href="#i-descargar"></use></svg>
                             Exportar CSV
                         </button>
@@ -1336,47 +992,224 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
+                                    <th>Pedido</th>
+                                    <th>Empresa</th>
                                     <th>Material</th>
-                                    <th>Vendedor y comprador</th>
                                     <th class="texto-derecha">Cantidad</th>
                                     <th class="texto-derecha">Valor</th>
-                                    <th>Oferta</th>
-                                    <th>Operación</th>
+                                    <th>Estado</th>
+                                    <th class="texto-derecha">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabla-admin-transacciones-body"></tbody>
+                            <tbody id="tabla-pedidos-body"></tbody>
                         </table>
                     </div>
-                    <div class="estado-vacio" id="admin-transacciones-vacio" hidden>
+                    <div class="estado-vacio" id="pedidos-vacio" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
+                        <h3>No hay pedidos con ese filtro</h3>
+                        <p>Las empresas recicladoras del municipio piden material desde su panel.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ PANEL EMPRESARIAL ============ -->
+            <section class="vista" id="vista-empresa" data-titulo="Panel empresarial" data-subtitulo="Compra de material recuperado al municipio">
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">Pedidos por responder</span><strong id="empresa-pendientes">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Aprobados por recoger</span><strong id="empresa-aprobados">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Entregados</span><strong id="empresa-entregados">0</strong></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Total comprado</span><strong id="empresa-invertido">$ 0</strong></div>
+                </div>
+
+                <article class="tarjeta">
+                    <div class="tarjeta-cabecera">
+                        <div>
+                            <h3>Material disponible en <span id="empresa-municipio">tu municipio</span></h3>
+                            <p>Existencias del centro de acopio municipal, sin lo ya reservado para otras empresas.</p>
+                        </div>
+                    </div>
+                    <p class="aviso-formulario" id="empresa-aviso-sin-perfil" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-info"></use></svg>
+                        Completa el perfil empresarial (más abajo) para poder hacer pedidos.
+                    </p>
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Categoría</th>
+                                    <th class="texto-derecha">Disponible</th>
+                                    <th class="texto-derecha">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-disponible-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="estado-vacio compacto" id="disponible-vacio" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-almacen"></use></svg>
+                        <h3>Sin material disponible por ahora</h3>
+                        <p>El inventario crece con cada recolección del municipio. Vuelve pronto.</p>
+                    </div>
+                </article>
+
+                <article class="tarjeta tarjeta-separada">
+                    <div class="tarjeta-cabecera tarjeta-cabecera-simple">
+                        <div>
+                            <h3>Mis pedidos</h3>
+                            <p>El administrador del municipio los aprueba y registra la entrega.</p>
+                        </div>
+                    </div>
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Material</th>
+                                    <th class="texto-derecha">Cantidad</th>
+                                    <th class="texto-derecha">Valor</th>
+                                    <th>Estado</th>
+                                    <th class="texto-derecha">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-mis-pedidos-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="estado-vacio compacto" id="mis-pedidos-vacio" hidden>
                         <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        <h3>No hay negociaciones con ese estado</h3>
-                        <p>Ajusta el filtro.</p>
+                        <h3>Sin pedidos todavía</h3>
+                        <p>Elige un material disponible y pulsa “Pedir”.</p>
+                    </div>
+                </article>
+
+                <article class="tarjeta tarjeta-separada">
+                    <div class="tarjeta-cabecera tarjeta-cabecera-simple">
+                        <div>
+                            <h3>Perfil empresarial</h3>
+                            <p>Datos de contacto que ve el administrador del municipio.</p>
+                        </div>
+                    </div>
+                    <form id="form-empresa" class="form-tarjeta" novalidate>
+                        <div class="form-grid">
+                            <div class="campo campo-completo">
+                                <label for="empresa-razon">Nombre o razón social <span class="obligatorio">*</span></label>
+                                <input type="text" id="empresa-razon" maxlength="120" autocomplete="organization">
+                                <small class="error-campo" id="error-empresa-razon"></small>
+                            </div>
+                            <div class="campo">
+                                <label for="empresa-nit">NIT <span class="opcional">(opcional)</span></label>
+                                <input type="text" id="empresa-nit" maxlength="20" placeholder="900123456-7">
+                                <small class="error-campo" id="error-empresa-nit"></small>
+                            </div>
+                            <div class="campo">
+                                <label for="empresa-telefono">Teléfono</label>
+                                <input type="tel" id="empresa-telefono" maxlength="30" autocomplete="tel">
+                                <small class="error-campo" id="error-empresa-telefono"></small>
+                            </div>
+                            <div class="campo">
+                                <label for="empresa-correo">Correo de contacto</label>
+                                <input type="email" id="empresa-correo" maxlength="120" autocomplete="email">
+                                <small class="error-campo" id="error-empresa-correo"></small>
+                            </div>
+                            <div class="campo">
+                                <label for="empresa-direccion">Dirección <span class="opcional">(opcional)</span></label>
+                                <input type="text" id="empresa-direccion" maxlength="150" autocomplete="street-address">
+                                <small class="error-campo" id="error-empresa-direccion"></small>
+                            </div>
+                            <div class="campo campo-completo">
+                                <label for="empresa-descripcion">Qué hace la empresa <span class="opcional">(opcional)</span></label>
+                                <textarea id="empresa-descripcion" rows="3" maxlength="400"></textarea>
+                                <small class="error-campo" id="error-empresa-descripcion"></small>
+                            </div>
+                        </div>
+                        <div class="acciones-formulario">
+                            <button type="submit" class="boton boton-primario">
+                                <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
+                                <span id="btn-guardar-empresa-texto">Guardar cambios</span>
+                            </button>
+                        </div>
+                    </form>
+                </article>
+            </section>
+
+            <!-- ============ ADMINISTRACIÓN ============ -->
+            <section class="vista" id="vista-administracion" data-titulo="Usuarios del municipio" data-subtitulo="Cuentas de ciudadanos, repartidores y empresas">
+                <div class="aviso-pendientes" id="admin-aviso-pendientes" hidden>
+                    <svg class="icono" aria-hidden="true"><use href="#i-alerta"></use></svg>
+                    <div>
+                        <strong id="admin-aviso-pendientes-titulo">Repartidores por aprobar</strong>
+                        <span>Revisa sus datos y pulsa “Aprobar” para que puedan recibir solicitudes.</span>
+                    </div>
+                    <button type="button" class="boton boton-secundario boton-pequeno" id="btn-ver-pendientes">Ver pendientes</button>
+                </div>
+
+                <div class="fila-resumen fila-resumen-4">
+                    <div class="mini-card"><span class="mini-card-etiqueta">Ciudadanos</span><strong id="admin-total-ciudadano">0</strong><small id="admin-activos-ciudadano"></small></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Repartidores</span><strong id="admin-total-repartidor">0</strong><small id="admin-activos-repartidor"></small></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Empresas recicladoras</span><strong id="admin-total-empresa">0</strong><small id="admin-activos-empresa"></small></div>
+                    <div class="mini-card"><span class="mini-card-etiqueta">Administradores</span><strong id="admin-total-administrador">0</strong><small id="admin-activos-administrador"></small></div>
+                </div>
+                <div class="tarjeta">
+                    <div class="barra-herramientas">
+                        <div class="buscador">
+                            <svg class="icono" aria-hidden="true"><use href="#i-buscar"></use></svg>
+                            <input type="search" id="admin-buscar-usuario" placeholder="Buscar por nombre, correo, dirección o empresa…" autocomplete="off" aria-label="Buscar usuario">
+                        </div>
+                        <div class="selector-filtro">
+                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
+                            <select id="admin-filtro-rol" aria-label="Filtrar por tipo de cuenta">
+                                <option value="">Todos los tipos</option>
+                                <option value="ciudadano">Ciudadanos</option>
+                                <option value="repartidor">Repartidores</option>
+                                <option value="empresa">Empresas recicladoras</option>
+                                <option value="administrador">Administradores</option>
+                            </select>
+                        </div>
+                        <div class="selector-filtro">
+                            <svg class="icono" aria-hidden="true"><use href="#i-filtro"></use></svg>
+                            <select id="admin-filtro-estado" aria-label="Filtrar por estado">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activos</option>
+                                <option value="pendiente">Por aprobar</option>
+                                <option value="inactivo">Inactivos</option>
+                            </select>
+                        </div>
+                        <span class="contador-resultados" id="usuarios-conteo" aria-live="polite">0 usuarios</span>
+                    </div>
+                    <div class="tabla-contenedor">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Tipo de cuenta</th>
+                                    <th class="texto-derecha">Actividad</th>
+                                    <th>Último acceso y alta</th>
+                                    <th>Estado</th>
+                                    <th class="texto-derecha">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-usuarios-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="estado-vacio" id="usuarios-vacio" hidden>
+                        <svg class="icono" aria-hidden="true"><use href="#i-usuarios"></use></svg>
+                        <h3>No hay usuarios con esos filtros</h3>
+                        <p>Ajusta la búsqueda o los filtros.</p>
                     </div>
                 </div>
 
-                <div id="admin-panel-estadisticas" hidden>
-                    <div class="fila-resumen fila-resumen-5">
-                        <div class="mini-card"><span class="mini-card-etiqueta">Cuentas activas</span><strong id="est-usuarios">0</strong></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Publicaciones activas</span><strong id="est-publicaciones">0</strong></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Ofertas pendientes</span><strong id="est-pendientes">0</strong></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Operaciones completadas</span><strong id="est-completadas">0</strong></div>
-                        <div class="mini-card"><span class="mini-card-etiqueta">Valor negociado</span><strong id="est-valor">$ 0</strong></div>
-                    </div>
-                    <div class="grid-estadisticas">
-                        <article class="tarjeta">
-                            <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Ofertas por estado</h3><p>Todas las negociaciones registradas.</p></div></div>
-                            <div class="lista-barras" id="est-ofertas-estado"></div>
-                        </article>
-                        <article class="tarjeta">
-                            <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Vendido por tipo de residuo</h3><p>Operaciones completadas.</p></div></div>
-                            <div class="lista-barras" id="est-material-tipo"></div>
-                        </article>
-                        <article class="tarjeta">
-                            <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Publicaciones activas por tipo</h3><p>Oferta disponible hoy.</p></div></div>
-                            <div class="lista-barras" id="est-publicaciones-tipo"></div>
-                        </article>
-                    </div>
+                <div class="grid-estadisticas tarjeta-separada">
+                    <article class="tarjeta">
+                        <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Solicitudes por estado</h3><p>Todas las del municipio.</p></div></div>
+                        <div class="lista-barras" id="est-solicitudes-estado"></div>
+                    </article>
+                    <article class="tarjeta">
+                        <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Kilos por repartidor</h3><p>Recolecciones de solicitudes ciudadanas.</p></div></div>
+                        <div class="lista-barras" id="est-repartidores"></div>
+                    </article>
+                    <article class="tarjeta">
+                        <div class="tarjeta-cabecera tarjeta-cabecera-simple"><div><h3>Entregado a empresas</h3><p>Por categoría de material.</p></div></div>
+                        <div class="lista-barras" id="est-entregas"></div>
+                    </article>
                 </div>
             </section>
 
@@ -1398,14 +1231,19 @@
                         <form id="form-perfil" class="form-tarjeta" novalidate>
                             <div class="form-grid">
                                 <div class="campo">
-                                    <label for="perfil-telefono">Teléfono <span class="opcional">(opcional)</span></label>
+                                    <label for="perfil-municipio">Municipio</label>
+                                    <input type="text" id="perfil-municipio" readonly>
+                                    <small class="ayuda-campo">Para cambiar de municipio, comunícate con el administrador.</small>
+                                </div>
+                                <div class="campo">
+                                    <label for="perfil-telefono">Teléfono <span class="opcional" id="perfil-telefono-opcional">(opcional)</span></label>
                                     <input type="tel" id="perfil-telefono" maxlength="30" autocomplete="tel" placeholder="300 123 4567">
                                     <small class="error-campo" id="error-perfil-telefono"></small>
                                 </div>
-                                <div class="campo">
-                                    <label for="perfil-ubicacion">Ciudad y barrio <span class="obligatorio">*</span></label>
-                                    <input type="text" id="perfil-ubicacion" maxlength="120" placeholder="Bogotá · Kennedy">
-                                    <small class="error-campo" id="error-perfil-ubicacion"></small>
+                                <div class="campo campo-completo">
+                                    <label for="perfil-direccion">Dirección y barrio <span class="opcional" id="perfil-direccion-opcional">(opcional)</span></label>
+                                    <input type="text" id="perfil-direccion" maxlength="150" autocomplete="street-address" placeholder="Calle 10 # 5-20, barrio Centro">
+                                    <small class="error-campo" id="error-perfil-direccion"></small>
                                 </div>
                             </div>
                             <p class="texto-tenue nota-formulario">El nombre, el correo y la foto vienen de tu cuenta de Google y no se editan aquí.</p>
@@ -1641,249 +1479,206 @@
         </div>
     </div>
 
-    <!-- ================= ESTADOS GLOBALES ================= -->
-    <!-- ================= MODALES DEL MERCADO ================= -->
-    <div class="modal-fondo" id="modal-publicacion" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-publicacion">
+    <!-- ================= MODALES MUNICIPALES ================= -->
+    <div class="modal-fondo" id="modal-solicitud" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-solicitud">
             <div class="modal-cabecera">
                 <div>
-                    <span class="modal-etiqueta">Mercado</span>
-                    <h2 id="titulo-modal-publicacion">Publicar material</h2>
+                    <span class="modal-etiqueta">Recolección a domicilio</span>
+                    <h2 id="titulo-modal-solicitud">Solicitar recolección</h2>
                 </div>
-                <button type="button" class="boton-icono" data-cerrar-modal="modal-publicacion" aria-label="Cerrar">
+                <button type="button" class="boton-icono" data-cerrar-modal="modal-solicitud" aria-label="Cerrar">
                     <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
                 </button>
             </div>
-            <form id="form-publicacion" novalidate>
+            <form id="form-solicitud" novalidate>
                 <div class="form-grid">
+                    <fieldset class="campo campo-completo campo-tipos">
+                        <legend>¿Qué separaste? <span class="obligatorio">*</span></legend>
+                        <div class="opciones-residuo" id="solicitud-tipos"></div>
+                        <small class="error-campo" id="error-solicitud-tipos"></small>
+                    </fieldset>
+                    <div class="campo campo-completo">
+                        <label for="solicitud-direccion">Dirección de recolección <span class="obligatorio">*</span></label>
+                        <input type="text" id="solicitud-direccion" maxlength="150" autocomplete="street-address" placeholder="Calle 10 # 5-20, barrio Centro">
+                        <small class="ayuda-campo" id="solicitud-municipio"></small>
+                        <small class="error-campo" id="error-solicitud-direccion"></small>
+                    </div>
                     <div class="campo">
-                        <label for="publicacion-tipo">Tipo de residuo <span class="obligatorio">*</span></label>
-                        <select id="publicacion-tipo">
-                            <option value="">Selecciona el tipo</option>
-                            <option value="Plástico">Plástico</option>
-                            <option value="Cartón">Cartón</option>
-                            <option value="Papel">Papel</option>
-                            <option value="Vidrio">Vidrio</option>
-                            <option value="Metal">Metal</option>
-                            <option value="Otros">Otros</option>
+                        <label for="solicitud-fecha">Fecha preferida <span class="obligatorio">*</span></label>
+                        <input type="date" id="solicitud-fecha">
+                        <small class="error-campo" id="error-solicitud-fecha"></small>
+                    </div>
+                    <div class="campo">
+                        <label for="solicitud-franja">Franja horaria</label>
+                        <select id="solicitud-franja">
+                            <option value="Cualquier hora">Cualquier hora</option>
+                            <option value="Mañana">Mañana (7 a. m. – 12 m.)</option>
+                            <option value="Tarde">Tarde (12 m. – 6 p. m.)</option>
                         </select>
-                        <small class="error-campo" id="error-publicacion-tipo"></small>
+                        <small class="error-campo" id="error-solicitud-franja"></small>
                     </div>
                     <div class="campo">
-                        <label for="publicacion-nombre">Nombre del material <span class="obligatorio">*</span></label>
-                        <input type="text" id="publicacion-nombre" maxlength="80" placeholder="Ej. Botellas PET transparentes" autocomplete="off">
-                        <small class="error-campo" id="error-publicacion-nombre"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="publicacion-cantidad">Cantidad disponible <span class="obligatorio">*</span></label>
-                        <input type="number" id="publicacion-cantidad" min="0" step="0.01" inputmode="decimal" placeholder="0">
-                        <small class="error-campo" id="error-publicacion-cantidad"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="publicacion-unidad">Se vende por <span class="obligatorio">*</span></label>
-                        <select id="publicacion-unidad">
-                            <option value="kg">Kilogramo (kg)</option>
-                            <option value="unidades">Unidad</option>
-                        </select>
-                        <small class="error-campo" id="error-publicacion-unidad"></small>
-                        <small class="ayuda-campo" id="nota-unidad-publicacion" hidden>No se puede cambiar porque la publicación ya tiene ofertas.</small>
-                    </div>
-                    <div class="campo">
-                        <label for="publicacion-precio">Precio por kg o unidad (COP) <span class="obligatorio">*</span></label>
-                        <input type="number" id="publicacion-precio" min="1" step="1" inputmode="decimal" placeholder="900">
-                        <small class="error-campo" id="error-publicacion-precio"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="publicacion-ubicacion">Ubicación <span class="obligatorio">*</span></label>
-                        <input type="text" id="publicacion-ubicacion" maxlength="120" placeholder="Ciudad · barrio">
-                        <small class="error-campo" id="error-publicacion-ubicacion"></small>
+                        <label for="solicitud-cantidad">Cantidad aproximada <span class="opcional">(kg, opcional)</span></label>
+                        <input type="number" id="solicitud-cantidad" min="0.1" step="0.1" inputmode="decimal" placeholder="Ej. 10">
+                        <small class="error-campo" id="error-solicitud-cantidad"></small>
                     </div>
                     <div class="campo campo-completo">
-                        <label for="publicacion-descripcion">Descripción <span class="opcional">(opcional)</span></label>
-                        <textarea id="publicacion-descripcion" rows="3" maxlength="400" placeholder="Estado del material, cómo está separado, horarios para recoger…"></textarea>
-                        <small class="error-campo" id="error-publicacion-descripcion"></small>
-                    </div>
-                    <div class="campo campo-completo">
-                        <span class="etiqueta-campo">Fotografías <span class="opcional">(hasta 3; la primera es la portada)</span></span>
-                        <div class="fotos-formulario">
-                            <div class="fotos-lista" id="publicacion-fotos-lista"></div>
-                            <button type="button" class="foto-agregar" id="publicacion-fotos-agregar">
-                                <svg class="icono" aria-hidden="true"><use href="#i-foto"></use></svg>
-                                <span>Agregar fotos</span>
-                            </button>
-                        </div>
-                        <input type="file" id="publicacion-fotos" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
-                        <small class="ayuda-campo" id="publicacion-fotos-contador">0 de 3 fotos</small>
-                        <small class="error-campo" id="error-publicacion-fotos"></small>
+                        <label for="solicitud-descripcion">Indicaciones <span class="opcional">(opcional)</span></label>
+                        <textarea id="solicitud-descripcion" rows="2" maxlength="300" placeholder="Ej. Bolsas en la portería, casa de reja verde…"></textarea>
+                        <small class="error-campo" id="error-solicitud-descripcion"></small>
                     </div>
                 </div>
                 <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-publicacion">Cancelar</button>
-                    <button type="submit" class="boton boton-primario" id="btn-guardar-publicacion">
+                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-solicitud">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">
                         <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
-                        Guardar publicación
+                        Enviar solicitud
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="modal-fondo" id="modal-detalle-publicacion" aria-hidden="true">
-        <div class="modal modal-ancho" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-detalle">
+    <div class="modal-fondo" id="modal-asignar" aria-hidden="true">
+        <div class="modal modal-angosto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-asignar">
             <div class="modal-cabecera">
                 <div>
-                    <span class="modal-etiqueta">Publicación</span>
-                    <h2 id="titulo-modal-detalle">Material</h2>
+                    <span class="modal-etiqueta" id="asignar-etiqueta">Solicitud</span>
+                    <h2 id="titulo-modal-asignar">Asignar repartidor</h2>
                 </div>
-                <button type="button" class="boton-icono" data-cerrar-modal="modal-detalle-publicacion" aria-label="Cerrar">
+                <button type="button" class="boton-icono" data-cerrar-modal="modal-asignar" aria-label="Cerrar">
                     <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
                 </button>
             </div>
-            <div class="modal-cuerpo">
-                <div class="detalle-publicacion" id="detalle-contenido"></div>
-                <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-detalle-publicacion">Cerrar</button>
-                    <button type="button" class="boton boton-primario" id="btn-detalle-ofertar">
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        Hacer oferta
-                    </button>
+            <form id="form-asignar" novalidate>
+                <div class="resumen-oferta" id="asignar-resumen"></div>
+                <div class="campo">
+                    <label for="asignar-repartidor">Repartidor <span class="obligatorio">*</span></label>
+                    <select id="asignar-repartidor"></select>
+                    <small class="ayuda-campo">Entre paréntesis, cuántas solicitudes tiene asignadas ahora.</small>
+                    <small class="error-campo" id="error-asignar-repartidor"></small>
                 </div>
-            </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-asignar">Cancelar</button>
+                    <button type="submit" class="boton boton-primario">Asignar</button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <div class="modal-fondo" id="modal-oferta" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-oferta">
+    <div class="modal-fondo" id="modal-completar" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-completar">
             <div class="modal-cabecera">
                 <div>
-                    <span class="modal-etiqueta">Oferta de compra</span>
-                    <h2 id="titulo-modal-oferta">Hacer una oferta</h2>
+                    <span class="modal-etiqueta" id="completar-etiqueta">Solicitud</span>
+                    <h2 id="titulo-modal-completar">Registrar recolección</h2>
                 </div>
-                <button type="button" class="boton-icono" data-cerrar-modal="modal-oferta" aria-label="Cerrar">
+                <button type="button" class="boton-icono" data-cerrar-modal="modal-completar" aria-label="Cerrar">
                     <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
                 </button>
             </div>
-            <form id="form-oferta" novalidate>
-                <div class="resumen-oferta" id="oferta-resumen"></div>
+            <form id="form-completar" novalidate>
+                <div class="resumen-oferta" id="completar-resumen"></div>
+                <p class="texto-modal">Pesa cada material y escribe la cantidad. Todo entra al inventario del centro de acopio.</p>
+                <div class="lineas-material" id="completar-lineas"></div>
+                <button type="button" class="enlace-boton" id="btn-completar-agregar">
+                    <svg class="icono" aria-hidden="true"><use href="#i-mas"></use></svg>
+                    Agregar otro material
+                </button>
+                <small class="error-campo" id="error-completar-lineas"></small>
+                <div class="campo">
+                    <label for="completar-observaciones">Observaciones <span class="opcional">(opcional)</span></label>
+                    <textarea id="completar-observaciones" rows="2" maxlength="300" placeholder="Ej. Material bien separado."></textarea>
+                    <small class="error-campo" id="error-completar-observaciones"></small>
+                </div>
+                <div class="total-oferta">
+                    <span>Total en kilos</span>
+                    <strong id="completar-total">0 kg</strong>
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-completar">Cancelar</button>
+                    <button type="submit" class="boton boton-primario" id="btn-guardar-completar">
+                        <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
+                        Registrar recolección
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-fondo" id="modal-pedido" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-pedido">
+            <div class="modal-cabecera">
+                <div>
+                    <span class="modal-etiqueta">Pedido al municipio</span>
+                    <h2 id="titulo-modal-pedido">Pedir material</h2>
+                </div>
+                <button type="button" class="boton-icono" data-cerrar-modal="modal-pedido" aria-label="Cerrar">
+                    <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
+                </button>
+            </div>
+            <form id="form-pedido" novalidate>
+                <div class="resumen-oferta" id="pedido-resumen"></div>
                 <div class="form-grid">
                     <div class="campo">
-                        <label for="oferta-cantidad">Cantidad que quieres comprar <span class="obligatorio">*</span></label>
+                        <label for="pedido-cantidad">Cantidad <span class="obligatorio">*</span></label>
                         <div class="campo-con-sufijo">
-                            <input type="number" id="oferta-cantidad" min="0.01" step="0.01" inputmode="decimal" placeholder="0">
-                            <span id="oferta-unidad">kg</span>
+                            <input type="number" id="pedido-cantidad" min="0.01" step="0.01" inputmode="decimal" placeholder="0">
+                            <span id="pedido-unidad">kg</span>
                         </div>
-                        <small class="error-campo" id="error-oferta-cantidad"></small>
+                        <small class="error-campo" id="error-pedido-cantidad"></small>
                     </div>
                     <div class="campo">
-                        <label for="oferta-precio">Precio que ofreces (COP) <span class="obligatorio">*</span></label>
+                        <label for="pedido-precio">Precio que ofreces (COP) <span class="obligatorio">*</span></label>
                         <div class="campo-con-sufijo">
-                            <input type="number" id="oferta-precio" min="1" step="1" inputmode="decimal">
-                            <span id="oferta-precio-unidad">por kg</span>
+                            <input type="number" id="pedido-precio" min="1" step="1" inputmode="decimal" placeholder="900">
+                            <span id="pedido-precio-unidad">por kg</span>
                         </div>
-                        <small class="error-campo" id="error-oferta-precio"></small>
+                        <small class="error-campo" id="error-pedido-precio"></small>
                     </div>
                     <div class="campo campo-completo">
-                        <label for="oferta-mensaje">Mensaje para el vendedor <span class="opcional">(opcional)</span></label>
-                        <textarea id="oferta-mensaje" rows="2" maxlength="300" placeholder="Ej. Puedo recoger el sábado en la mañana."></textarea>
-                        <small class="error-campo" id="error-oferta-mensaje"></small>
+                        <label for="pedido-mensaje">Mensaje para el municipio <span class="opcional">(opcional)</span></label>
+                        <textarea id="pedido-mensaje" rows="2" maxlength="300" placeholder="Ej. Recogemos con nuestro camión el lunes."></textarea>
+                        <small class="error-campo" id="error-pedido-mensaje"></small>
                     </div>
                 </div>
                 <div class="total-oferta">
-                    <span>Total de la oferta</span>
-                    <strong id="oferta-total">—</strong>
+                    <span>Valor del pedido</span>
+                    <strong id="pedido-total">—</strong>
                 </div>
                 <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-oferta">Cancelar</button>
+                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-pedido">Cancelar</button>
                     <button type="submit" class="boton boton-primario">
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        Enviar oferta
+                        <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
+                        Enviar pedido
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="modal-fondo" id="modal-contacto" aria-hidden="true">
-        <div class="modal modal-angosto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-contacto">
+    <div class="modal-fondo" id="modal-texto" aria-hidden="true">
+        <div class="modal modal-angosto" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-texto">
             <div class="modal-cabecera">
                 <div>
-                    <span class="modal-etiqueta">Contacto</span>
-                    <h2 id="titulo-modal-contacto">Contacto</h2>
+                    <span class="modal-etiqueta" id="texto-etiqueta">Confirmar</span>
+                    <h2 id="titulo-modal-texto">Motivo</h2>
                 </div>
-                <button type="button" class="boton-icono" data-cerrar-modal="modal-contacto" aria-label="Cerrar">
+                <button type="button" class="boton-icono" data-cerrar-modal="modal-texto" aria-label="Cerrar">
                     <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
                 </button>
             </div>
-            <div class="modal-cuerpo">
-                <div id="contacto-contenido"></div>
-                <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-contacto">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-fondo" id="modal-necesidad" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-necesidad">
-            <div class="modal-cabecera">
-                <div>
-                    <span class="modal-etiqueta">Empresa recicladora</span>
-                    <h2 id="titulo-modal-necesidad">Publicar necesidad de material</h2>
-                </div>
-                <button type="button" class="boton-icono" data-cerrar-modal="modal-necesidad" aria-label="Cerrar">
-                    <svg class="icono" aria-hidden="true"><use href="#i-cerrar"></use></svg>
-                </button>
-            </div>
-            <form id="form-necesidad" novalidate>
-                <div class="form-grid">
-                    <div class="campo">
-                        <label for="necesidad-tipo">Material que necesitas <span class="obligatorio">*</span></label>
-                        <select id="necesidad-tipo">
-                            <option value="">Selecciona el tipo</option>
-                            <option value="Plástico">Plástico</option>
-                            <option value="Cartón">Cartón</option>
-                            <option value="Papel">Papel</option>
-                            <option value="Vidrio">Vidrio</option>
-                            <option value="Metal">Metal</option>
-                            <option value="Otros">Otros</option>
-                        </select>
-                        <small class="error-campo" id="error-necesidad-tipo"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="necesidad-unidad">Unidad <span class="obligatorio">*</span></label>
-                        <select id="necesidad-unidad">
-                            <option value="kg">Kilogramos (kg)</option>
-                            <option value="unidades">Unidades</option>
-                        </select>
-                        <small class="error-campo" id="error-necesidad-unidad"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="necesidad-minima">Cantidad mínima <span class="obligatorio">*</span></label>
-                        <input type="number" id="necesidad-minima" min="0.01" step="0.01" inputmode="decimal">
-                        <small class="error-campo" id="error-necesidad-minima"></small>
-                    </div>
-                    <div class="campo">
-                        <label for="necesidad-maxima">Cantidad máxima <span class="obligatorio">*</span></label>
-                        <input type="number" id="necesidad-maxima" min="0.01" step="0.01" inputmode="decimal">
-                        <small class="error-campo" id="error-necesidad-maxima"></small>
-                    </div>
-                    <div class="campo campo-completo">
-                        <label for="necesidad-precio">Precio que ofreces por kg o unidad (COP) <span class="obligatorio">*</span></label>
-                        <input type="number" id="necesidad-precio" min="1" step="1" inputmode="decimal">
-                        <small class="error-campo" id="error-necesidad-precio"></small>
-                    </div>
-                    <div class="campo campo-completo">
-                        <label for="necesidad-descripcion">Condiciones <span class="opcional">(opcional)</span></label>
-                        <textarea id="necesidad-descripcion" rows="3" maxlength="300" placeholder="Ej. PET transparente, limpio y sin etiquetas."></textarea>
-                        <small class="error-campo" id="error-necesidad-descripcion"></small>
-                    </div>
+            <form id="form-texto" novalidate>
+                <p class="texto-modal" id="texto-mensaje"></p>
+                <div class="campo">
+                    <label for="texto-valor" id="texto-label">Motivo</label>
+                    <textarea id="texto-valor" rows="3" maxlength="300"></textarea>
+                    <small class="error-campo" id="error-texto-valor"></small>
                 </div>
                 <div class="modal-pie">
-                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-necesidad">Cancelar</button>
-                    <button type="submit" class="boton boton-primario">
-                        <svg class="icono" aria-hidden="true"><use href="#i-check"></use></svg>
-                        Guardar necesidad
-                    </button>
+                    <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-texto">Volver</button>
+                    <button type="submit" class="boton boton-primario" id="btn-texto-confirmar">Confirmar</button>
                 </div>
             </form>
         </div>
@@ -1904,10 +1699,14 @@
                 <p class="texto-modal"><strong id="rol-usuario-nombre"></strong> es actualmente <strong id="rol-usuario-actual"></strong>.</p>
                 <div class="campo">
                     <label for="rol-nuevo">Nuevo tipo de cuenta</label>
-                    <select id="rol-nuevo"></select>
+                    <select id="rol-nuevo">
+                        <option value="ciudadano">Ciudadano</option>
+                        <option value="repartidor">Repartidor</option>
+                        <option value="administrador">Administrador del municipio</option>
+                    </select>
                     <small class="error-campo" id="error-rol-nuevo"></small>
                 </div>
-                <p class="texto-tenue nota-formulario">Si deja de ser vendedor, sus ofertas pendientes se rechazan y sus publicaciones dejan de verse. El historial se conserva.</p>
+                <p class="texto-tenue nota-formulario">Si deja de ser repartidor, sus solicitudes asignadas vuelven a quedar sin asignar. El historial se conserva. Las cuentas de empresa no cambian de tipo.</p>
                 <div class="modal-pie">
                     <button type="button" class="boton boton-secundario" data-cerrar-modal="modal-rol">Cancelar</button>
                     <button type="submit" class="boton boton-primario">Guardar</button>
@@ -1952,20 +1751,24 @@
                         <span>Residuos aprovechables</span>
                     </div>
                 </div>
-                <h1>El mercado de residuos aprovechables de tu comunidad.</h1>
-                <p>Vende lo que separas, compra material para tu negocio o abastece tu planta de reciclaje.</p>
+                <h1>La gestión de residuos aprovechables de tu municipio.</h1>
+                <p>Los ciudadanos separan en casa, los repartidores recogen, el centro de acopio municipal pesa y almacena, y las empresas recicladoras compran el material.</p>
                 <ul class="acceso-roles">
                     <li>
-                        <svg class="icono" aria-hidden="true"><use href="#i-etiqueta"></use></svg>
-                        <div><strong>Vendedores</strong><span>Publican el material que separan y reciben ofertas.</span></div>
+                        <svg class="icono" aria-hidden="true"><use href="#i-hoja"></use></svg>
+                        <div><strong>Ciudadanos</strong><span>Piden la recolección de lo que separan y siguen su estado.</span></div>
                     </li>
                     <li>
-                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                        <div><strong>Compradores</strong><span>Ofertan por material cerca de su negocio.</span></div>
+                        <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                        <div><strong>Repartidores</strong><span>Reciben su ruta y registran los kilos de cada recolección.</span></div>
                     </li>
                     <li>
                         <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
-                        <div><strong>Empresas recicladoras</strong><span>Publican lo que necesitan y compran por volumen.</span></div>
+                        <div><strong>Empresas recicladoras</strong><span>Piden al municipio el material recuperado.</span></div>
+                    </li>
+                    <li>
+                        <svg class="icono" aria-hidden="true"><use href="#i-escudo"></use></svg>
+                        <div><strong>Alcaldía</strong><span>Asigna solicitudes, opera el centro de acopio y aprueba pedidos.</span></div>
                     </li>
                 </ul>
             </section>
@@ -1992,7 +1795,7 @@
 
                 <div id="paso-registro" hidden>
                     <h2>Completa tu registro</h2>
-                    <p class="acceso-subtitulo">Es tu primera vez en EcoGestión. Elige el tipo de cuenta que necesitas.</p>
+                    <p class="acceso-subtitulo" id="registro-subtitulo">Es tu primera vez en EcoGestión. Elige tu tipo de cuenta y tu municipio.</p>
                     <div class="registro-cuenta">
                         <span id="registro-avatar"></span>
                         <div>
@@ -2002,23 +1805,27 @@
                     </div>
                     <div class="acceso-error" id="registro-error" role="alert" hidden></div>
                     <form id="form-registro" novalidate>
-                        <fieldset class="campo campo-tipo">
+                        <p class="aviso-formulario" id="registro-aviso-admin" hidden>
+                            <svg class="icono" aria-hidden="true"><use href="#i-escudo"></use></svg>
+                            Tu correo está autorizado como administrador. Elige el municipio que vas a gestionar.
+                        </p>
+                        <fieldset class="campo campo-tipo" id="registro-campo-tipo">
                             <legend>Tipo de cuenta <span class="obligatorio">*</span></legend>
                             <div class="opciones-tipo" id="registro-tipo">
                                 <label class="opcion-tipo">
-                                    <input type="radio" name="registro-tipo" value="vendedor">
+                                    <input type="radio" name="registro-tipo" value="ciudadano">
                                     <span class="opcion-tipo-cuerpo">
-                                        <svg class="icono" aria-hidden="true"><use href="#i-etiqueta"></use></svg>
-                                        <strong>Vendedor</strong>
-                                        <small>Ofrezco residuos aprovechables.</small>
+                                        <svg class="icono" aria-hidden="true"><use href="#i-hoja"></use></svg>
+                                        <strong>Ciudadano</strong>
+                                        <small>Separo en casa y pido la recolección.</small>
                                     </span>
                                 </label>
                                 <label class="opcion-tipo">
-                                    <input type="radio" name="registro-tipo" value="comprador">
+                                    <input type="radio" name="registro-tipo" value="repartidor">
                                     <span class="opcion-tipo-cuerpo">
-                                        <svg class="icono" aria-hidden="true"><use href="#i-oferta"></use></svg>
-                                        <strong>Comprador</strong>
-                                        <small>Compro residuos a la población.</small>
+                                        <svg class="icono" aria-hidden="true"><use href="#i-camion"></use></svg>
+                                        <strong>Repartidor</strong>
+                                        <small>Recojo residuos. El municipio aprueba mi cuenta.</small>
                                     </span>
                                 </label>
                                 <label class="opcion-tipo">
@@ -2026,7 +1833,7 @@
                                     <span class="opcion-tipo-cuerpo">
                                         <svg class="icono" aria-hidden="true"><use href="#i-empresa"></use></svg>
                                         <strong>Empresa recicladora</strong>
-                                        <small>Compro material para reciclar.</small>
+                                        <small>Compro material al municipio.</small>
                                     </span>
                                 </label>
                             </div>
@@ -2034,13 +1841,26 @@
                         </fieldset>
                         <div class="form-grid">
                             <div class="campo">
-                                <label for="registro-ubicacion">Ciudad y barrio <span class="obligatorio">*</span></label>
-                                <input type="text" id="registro-ubicacion" maxlength="120" placeholder="Bogotá · Kennedy">
-                                <small class="error-campo" id="error-registro-ubicacion"></small>
+                                <label for="registro-departamento">Departamento <span class="obligatorio">*</span></label>
+                                <select id="registro-departamento" autocomplete="address-level1"></select>
+                                <small class="error-campo" id="error-registro-departamento"></small>
                             </div>
                             <div class="campo">
-                                <label for="registro-telefono">Teléfono <span class="opcional">(opcional)</span></label>
-                                <input type="tel" id="registro-telefono" maxlength="30" autocomplete="tel">
+                                <label for="registro-municipio">Municipio <span class="obligatorio">*</span></label>
+                                <select id="registro-municipio" autocomplete="address-level2" disabled>
+                                    <option value="">Primero elige el departamento</option>
+                                </select>
+                                <small class="error-campo" id="error-registro-municipio"></small>
+                            </div>
+                            <div class="campo campo-completo">
+                                <label for="registro-direccion">Dirección y barrio <span class="obligatorio" id="registro-direccion-obligatorio">*</span><span class="opcional" id="registro-direccion-opcional" hidden>(opcional)</span></label>
+                                <input type="text" id="registro-direccion" maxlength="150" autocomplete="street-address" placeholder="Calle 10 # 5-20, barrio Centro">
+                                <small class="ayuda-campo" id="registro-direccion-ayuda">Aquí pasará el repartidor a recoger tus residuos.</small>
+                                <small class="error-campo" id="error-registro-direccion"></small>
+                            </div>
+                            <div class="campo">
+                                <label for="registro-telefono">Teléfono <span class="opcional" id="registro-telefono-opcional">(opcional)</span><span class="obligatorio" id="registro-telefono-obligatorio" hidden>*</span></label>
+                                <input type="tel" id="registro-telefono" maxlength="30" autocomplete="tel" placeholder="300 123 4567">
                                 <small class="error-campo" id="error-registro-telefono"></small>
                             </div>
                             <div class="form-grid campo-completo" id="registro-campos-empresa" hidden>
@@ -2080,6 +1900,8 @@
 
     <script src="js/lib/sql-asm.js"></script>
     <script src="js/utilidades.js"></script>
+    <script src="js/lugares.js"></script>
+    <script src="js/comun.js"></script>
     <script src="js/datos_sql.js"></script>
     <script src="js/database.js"></script>
     <script src="js/materiales.js"></script>
@@ -2088,15 +1910,13 @@
     <script src="js/historial.js"></script>
     <script src="js/reportes.js"></script>
     <script src="js/panel.js"></script>
-    <!-- Ampliación: cuentas, roles y mercado -->
+    <!-- Cuentas, roles y gestión municipal -->
     <script src="js/config.js"></script>
     <script src="js/nube.js"></script>
     <script src="js/sesion.js"></script>
     <script src="js/perfil.js"></script>
-    <script src="js/mercado.js"></script>
-    <script src="js/publicaciones.js"></script>
-    <script src="js/ofertas.js"></script>
-    <script src="js/empresa.js"></script>
+    <script src="js/solicitudes.js"></script>
+    <script src="js/pedidos.js"></script>
     <script src="js/administracion.js"></script>
     <script src="js/app.js"></script>
 </body>

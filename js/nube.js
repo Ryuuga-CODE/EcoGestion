@@ -197,20 +197,6 @@
         return Eco.DB.ultimaSincronizacion();
     }
 
-    /** Sube una foto (data URL JPEG) y devuelve su URL pública. */
-    async function subirFoto(dataUrl) {
-        await asegurarToken();
-        const blob = await (await window.fetch(dataUrl)).blob();
-        const aleatorio = Math.random().toString(36).slice(2, 10);
-        const ruta = `${sesion.user.id}/${Date.now()}-${aleatorio}.jpg`;
-        await pedir(`/storage/v1/object/fotos/${ruta}`, {
-            method: 'POST',
-            headers: cabeceras({ 'Content-Type': 'image/jpeg', 'x-upsert': 'false' }),
-            body: blob
-        });
-        return `${base()}/storage/v1/object/public/fotos/${ruta}`;
-    }
-
     Eco.Nube = {
         configurada,
         iniciarConGoogle,
@@ -218,7 +204,6 @@
         cerrarSesion,
         rpc,
         sincronizar,
-        subirFoto,
         haySesion: () => Boolean(sesion)
     };
 })();

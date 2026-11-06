@@ -537,7 +537,8 @@ a.menu-item {
 
 /* --------------------------------- Insignias --------------------------------- */
 .insignia-tipo[data-tipo="Plástico"] { background: #ebf3f9; color: #32627f; }
-.insignia-tipo[data-tipo="Cartón"]   { background: #fbf3e4; color: #8a641b; }
+.insignia-tipo[data-tipo="Cartón"],
+.insignia-tipo[data-tipo="Papel y cartón"] { background: #fbf3e4; color: #8a641b; }
 .insignia-tipo[data-tipo="Papel"]    { background: #f6f3ea; color: #7d6a3b; }
 .insignia-tipo[data-tipo="Vidrio"]   { background: #eef1f8; color: #4d6088; }
 .insignia-tipo[data-tipo="Metal"]    { background: #eef1f2; color: #4c5d62; }
@@ -569,7 +570,8 @@ a.menu-item {
 }
 
 .insignia-rol[data-rol="administrador"] { background: #0e3325; color: var(--lima); }
-.insignia-rol[data-rol="comprador"]     { background: #ebf3f9; color: #32627f; }
+.insignia-rol[data-rol="repartidor"]    { background: #ebf3f9; color: #32627f; }
+.insignia-rol[data-rol="ciudadano"]     { background: var(--verde-50); color: var(--verde-700); }
 .insignia-rol[data-rol="empresa"]       { background: #f4eff8; color: #6d4e80; }
 
 /* Estados de ofertas, publicaciones y cuentas */
@@ -594,6 +596,12 @@ a.menu-item {
 }
 
 .estado-pendiente  { background: var(--advertencia-fondo); color: var(--advertencia); }
+.estado-asignada,
+.estado-aprobado   { background: #ebf3f9; color: #32627f; }
+.estado-recolectada,
+.estado-entregado  { background: var(--verde-50); color: var(--verde-700); }
+.estado-rechazado  { background: var(--peligro-fondo); color: var(--peligro); }
+.estado-cancelado  { background: #eef1f0; color: #6f7c75; }
 .estado-aceptada,
 .estado-en-curso   { background: #ebf3f9; color: #32627f; }
 .estado-completada,
@@ -915,6 +923,12 @@ small.bloque {
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+}
+
+.resumen-oferta .publicacion-etiquetas {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: auto;
 }
 
 .resumen-oferta strong {
@@ -1483,6 +1497,19 @@ small.bloque {
 }
 
 @media (max-width: 560px) {
+    .linea-material {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .linea-material select {
+        grid-column: 1 / -1;
+    }
+
+    .pendientes-municipio,
+    .guia-separacion {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .capa-acceso {
         padding: 12px;
     }
@@ -1507,4 +1534,440 @@ small.bloque {
     .pestanas {
         width: 100%;
     }
+}
+
+/* ============================================================
+   Gestión municipal: solicitudes, rutas, pedidos y registro
+   ============================================================ */
+.acceso-error.acceso-info {
+    background: var(--advertencia-fondo);
+    color: var(--advertencia);
+}
+
+/* Tareas pendientes del administrador (panel principal) */
+.pendientes-municipio {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.pendiente-municipio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--blanco);
+    color: var(--texto-suave);
+    font: inherit;
+    font-size: 0.86rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--transicion), box-shadow var(--transicion);
+}
+
+.pendiente-municipio:hover,
+.pendiente-municipio:focus-visible {
+    border-color: var(--verde-200);
+    box-shadow: var(--sombra);
+    outline: none;
+}
+
+.pendiente-municipio strong {
+    color: var(--texto);
+    font-size: 1.2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pendiente-municipio small {
+    display: block;
+    color: var(--texto-tenue);
+    font-size: 0.74rem;
+}
+
+.pendiente-municipio.con-pendientes {
+    border-color: #ecd3a8;
+    background: var(--advertencia-fondo);
+}
+
+.pendiente-municipio.con-pendientes .kpi-icono {
+    background: #f6e3c2;
+    color: var(--advertencia);
+}
+
+/* Aviso de repartidores por aprobar */
+.aviso-pendientes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid #ecd3a8;
+    border-radius: var(--radio);
+    background: var(--advertencia-fondo);
+    color: var(--advertencia);
+}
+
+.aviso-pendientes > .icono {
+    width: 22px;
+    height: 22px;
+    flex: none;
+}
+
+.aviso-pendientes div {
+    display: flex;
+    flex: 1 1 260px;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.82rem;
+}
+
+tr.fila-pendiente td {
+    background: #fffaf1;
+}
+
+/* Tarjetas de solicitud (ciudadano y repartidor) */
+.grid-solicitudes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.tarjeta-solicitud {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--blanco);
+    box-shadow: var(--sombra);
+}
+
+.tarjeta-solicitud[data-estado="Asignada"] {
+    border-top: 3px solid #5a8bb0;
+}
+
+.tarjeta-solicitud[data-estado="Pendiente"] {
+    border-top: 3px solid #e0b25e;
+}
+
+.tarjeta-solicitud[data-estado="Recolectada"] {
+    border-top: 3px solid var(--verde-500);
+}
+
+.tarjeta-solicitud[data-estado="Cancelada"],
+.tarjeta-solicitud[data-estado="Rechazada"] {
+    opacity: 0.85;
+}
+
+.solicitud-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.solicitud-numero {
+    margin-right: auto;
+    color: var(--texto);
+    font-size: 0.92rem;
+    font-weight: 720;
+}
+
+.pasos-solicitud {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pasos-solicitud li {
+    position: relative;
+    padding-top: 16px;
+    color: var(--texto-tenue);
+    font-size: 0.7rem;
+    text-align: center;
+}
+
+.pasos-solicitud li::before {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--borde-fuerte);
+    border-radius: 50%;
+    background: var(--blanco);
+    content: "";
+    transform: translateX(-50%);
+}
+
+.pasos-solicitud li + li::after {
+    position: absolute;
+    top: 5px;
+    right: calc(50% + 7px);
+    width: calc(100% - 14px);
+    height: 2px;
+    background: var(--borde);
+    content: "";
+}
+
+.pasos-solicitud li.hecho {
+    color: var(--verde-700);
+    font-weight: 650;
+}
+
+.pasos-solicitud li.hecho::before {
+    border-color: var(--verde-600);
+    background: var(--verde-600);
+}
+
+.pasos-solicitud li.hecho + li.hecho::after {
+    background: var(--verde-500);
+}
+
+.pasos-solicitud li.actual::before {
+    box-shadow: 0 0 0 4px var(--verde-100);
+}
+
+.solicitud-datos {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+.solicitud-datos div {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+.solicitud-datos dt {
+    color: var(--texto-tenue);
+}
+
+.solicitud-datos dd {
+    margin: 0;
+    color: var(--texto);
+    overflow-wrap: anywhere;
+}
+
+.solicitud-nota {
+    display: flex;
+    gap: 7px;
+    margin: 0;
+    padding: 9px 11px;
+    border-radius: 10px;
+    background: #f6f9f7;
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.solicitud-nota .icono {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    margin-top: 2px;
+}
+
+.solicitud-nota-alerta {
+    display: block;
+    background: var(--peligro-fondo);
+    color: var(--peligro);
+}
+
+.solicitud-nota-info {
+    display: block;
+}
+
+.solicitud-persona {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--borde);
+}
+
+.solicitud-persona > div {
+    min-width: 0;
+}
+
+.solicitud-persona small {
+    display: block;
+    color: var(--texto-tenue);
+    font-size: 0.7rem;
+}
+
+.solicitud-persona strong {
+    display: block;
+    color: var(--texto);
+    font-size: 0.86rem;
+}
+
+.solicitud-persona .detalle-contacto {
+    margin-top: 4px;
+}
+
+.tarjeta-solicitud .publicacion-acciones {
+    margin-top: auto;
+}
+
+/* Guía de separación (ciudadano) */
+.guia-separacion {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.guia-separacion p {
+    margin: 8px 0 0;
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+/* Tipos de residuo en el formulario de solicitud */
+.campo-tipos {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.campo-tipos legend {
+    margin-bottom: 8px;
+    padding: 0;
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.opciones-residuo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.opciones-residuo.campo-invalido {
+    outline: 1px solid #cf7c7c;
+    outline-offset: 4px;
+    border-radius: 8px;
+}
+
+.opcion-residuo {
+    position: relative;
+    cursor: pointer;
+}
+
+.opcion-residuo input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.opcion-residuo .insignia {
+    display: inline-flex;
+    padding: 8px 14px;
+    border: 1.5px solid transparent;
+    font-size: 0.8rem;
+    opacity: 0.55;
+    transition: opacity var(--transicion), border-color var(--transicion);
+}
+
+.opcion-residuo input:checked + .insignia {
+    border-color: currentColor;
+    opacity: 1;
+}
+
+
+.opcion-residuo input:focus-visible + .insignia {
+    outline: 2px solid var(--verde-500);
+    outline-offset: 2px;
+}
+
+/* Líneas de material al registrar los kilos */
+.lineas-material {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.linea-material {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.linea-material select,
+.linea-material input {
+    width: 100%;
+    min-width: 0;
+}
+
+#error-completar-lineas {
+    display: block;
+    margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+    .guia-separacion {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pendientes-municipio {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Ajustes de tablas municipales */
+td .acciones-tabla {
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 230px;
+}
+
+td .detalle-contacto {
+    gap: 2px;
+    margin-top: 4px;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+td .detalle-contacto .enlace-contacto {
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+.solicitud-persona .detalle-contacto {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.publicacion-acciones a.boton {
+    text-decoration: none;
+}
+
+.bienvenida-ciudadano .boton {
+    margin-top: 16px;
+}
+
+/* El ✓ va después del punto de color de la insignia */
+.opcion-residuo input:checked + .insignia::after {
+    margin-left: 6px;
+    content: "✓";
+    font-weight: 800;
 }
