@@ -18,7 +18,7 @@
     const CAMPOS_SOLICITUD = ['solicitud-tipos', 'solicitud-direccion', 'solicitud-fecha', 'solicitud-franja',
         'solicitud-cantidad', 'solicitud-descripcion'];
 
-    const filtrosAdmin = { estado: 'abiertas', texto: '' };
+    const filtrosAdmin = { estado: 'abiertas', texto: '', modo: 'lista' };
     let solicitudActual = null;
 
     const SQL_SOLICITUDES = `
@@ -395,6 +395,11 @@
     /* ---------------------------- Administrador ---------------------------- */
     function renderAdmin() {
         const f = filtrosAdmin;
+        if (f.modo === 'kanban') {
+            renderKanban();
+            actualizarResumenAdmin();
+            return;
+        }
         const condicion = {
             abiertas: "s.estado IN ('Pendiente', 'Asignada')",
             cerradas: "s.estado IN ('Cancelada', 'Rechazada')"
@@ -439,7 +444,11 @@
         document.getElementById('sol-conteo').textContent = `${lista.length} ${lista.length === 1 ? 'solicitud' : 'solicitudes'}`;
         document.getElementById('solicitudes-vacio').hidden = lista.length > 0;
         document.getElementById('tabla-solicitudes-body').closest('.tabla-contenedor').hidden = lista.length === 0;
+        actualizarResumenAdmin();
+    }
 
+    function actualizarResumenAdmin() {
+        const hoy = Eco.Util.fechaHoyIso();
         const r = Eco.DB.consultarUno(
             `SELECT SUM(CASE WHEN estado = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
                     SUM(CASE WHEN estado = 'Asignada' THEN 1 ELSE 0 END) AS asignadas,
@@ -449,6 +458,122 @@
         document.getElementById('sol-asignadas').textContent = r.asignadas || 0;
         document.getElementById('sol-mes').textContent = r.mes || 0;
         document.getElementById('sol-repartidores').textContent = repartidores().length;
+    }
+
+    /* --------------------------- Tablero Kanban --------------------------- */
+    // Columnas del tablero: Pendiente (sin asignar), En progreso (asignada)
+    // y Finalizado (recolectada en los últimos 30 días).
+    const COLUMNAS_KANBAN = [
+        { estado: 'Pendiente', lista: 'kanban-pendiente', conteo: 'kanban-conteo-pendiente' },
+        { estado: 'Asignada', lista: 'kanban-progreso', conteo: 'kanban-conteo-progreso' },
+        { estado: 'Recolectada', lista: 'kanban-finalizado', conteo: 'kanban-conteo-finalizado' }
+    ];
+
+    function tarjetaKanban(s, hoy) {
+        const atrasada = ['Pendiente', 'Asignada'].includes(s.estado) && s.fecha_preferida < hoy;
+        let acciones = '';
+        if (s.estado === 'Pendiente') {
+            acciones = `<button type="button" class="boton boton-primario boton-pequeno" data-accion="asignar" data-id="${s.id_solicitud}">Asignar</button>
+                <button type="button" class="boton boton-secundario boton-pequeno" data-accion="rechazar" data-id="${s.id_solicitud}">Rechazar</button>`;
+        } else if (s.estado === 'Asignada') {
+            acciones = `<button type="button" class="boton boton-primario boton-pequeno" data-accion="completar" data-id="${s.id_solicitud}">Registrar kilos</button>
+                <button type="button" class="boton boton-secundario boton-pequeno" data-accion="asignar" data-id="${s.id_solicitud}">Reasignar</button>`;
+        }
+        const arrastrable = s.estado !== 'Recolectada';
+        return `
+            <article class="kanban-tarjeta${atrasada ? ' kanban-atrasada' : ''}" data-id="${s.id_solicitud}" data-estado="${esc(s.estado)}"
+                     ${arrastrable ? 'draggable="true"' : ''} aria-label="Solicitud ${s.id_solicitud} de ${esc(s.ciudadano)}">
+                <header class="kanban-tarjeta-cabecera">
+                    <strong>#${s.id_solicitud}</strong>
+                    ${atrasada ? '<span class="insignia insignia-alerta">Atrasada</span>' : ''}
+                </header>
+                <p class="kanban-tarjeta-titulo">${esc(s.ciudadano)}</p>
+                <small class="bloque texto-tenue">${esc(s.direccion)}</small>
+                <div class="publicacion-etiquetas">${C().insigniasTipos(s.tipos_residuo)}</div>
+                <dl class="kanban-datos">
+                    <div><dt>Fecha</dt><dd>${esc(cuando(s))}</dd></div>
+                    ${s.repartidor ? `<div><dt>Responsable</dt><dd>${esc(s.repartidor)}</dd></div>` : ''}
+                    ${s.estado === 'Recolectada' ? `<div><dt>Recolectado</dt><dd>${esc(kilos(s.kilos_recolectados))}</dd></div>` : ''}
+                </dl>
+                ${acciones ? `<footer class="kanban-acciones">${acciones}</footer>` : ''}
+            </article>`;
+    }
+
+    function renderKanban() {
+        const hoy = Eco.Util.fechaHoyIso();
+        const desde = Eco.Util.fechaHaceDias(29);
+        const t = filtrosAdmin.texto;
+        const lista = Eco.DB.consultar(
+            `${SQL_SOLICITUDES}
+             WHERE (s.estado IN ('Pendiente', 'Asignada')
+                    OR (s.estado = 'Recolectada' AND substr(s.fecha_cierre, 1, 10) >= ?))
+               AND (? = '' OR c.nombre LIKE '%' || ? || '%' OR s.direccion LIKE '%' || ? || '%' OR r.nombre LIKE '%' || ? || '%')
+             ORDER BY CASE WHEN s.estado = 'Recolectada' THEN s.fecha_cierre END DESC,
+                      s.fecha_preferida, s.id_solicitud`,
+            [desde, t, t, t, t]);
+        COLUMNAS_KANBAN.forEach((col) => {
+            const tarjetas = lista.filter((s) => s.estado === col.estado);
+            document.getElementById(col.lista).innerHTML = tarjetas.length
+                ? tarjetas.map((s) => tarjetaKanban(s, hoy)).join('')
+                : '<p class="kanban-vacia">Sin solicitudes</p>';
+            document.getElementById(col.conteo).textContent = tarjetas.length;
+        });
+        document.getElementById('sol-conteo').textContent =
+            `${lista.length} ${lista.length === 1 ? 'solicitud' : 'solicitudes'}`;
+    }
+
+    function cambiarModo(modo) {
+        filtrosAdmin.modo = modo;
+        const kanban = modo === 'kanban';
+        document.querySelectorAll('#sol-modo .chip-filtro').forEach((boton) => {
+            const activo = boton.dataset.modo === modo;
+            boton.classList.toggle('chip-activo', activo);
+            boton.setAttribute('aria-pressed', String(activo));
+        });
+        document.getElementById('sol-filtro-estado').hidden = kanban;
+        document.getElementById('sol-kanban').hidden = !kanban;
+        document.getElementById('tabla-solicitudes-body').closest('.tabla-contenedor').hidden = kanban;
+        document.getElementById('solicitudes-vacio').hidden = true;
+        renderAdmin();
+    }
+
+    // Arrastrar y soltar: solo se permiten los movimientos del flujo real
+    // (asignar y registrar kilos); cada uno abre su formulario.
+    function iniciarArrastre() {
+        const tablero = document.getElementById('sol-kanban');
+        let arrastrada = null;
+        tablero.addEventListener('dragstart', (evento) => {
+            const tarjeta = evento.target.closest('.kanban-tarjeta[draggable="true"]');
+            if (!tarjeta) return;
+            arrastrada = { id: Number(tarjeta.dataset.id), estado: tarjeta.dataset.estado };
+            evento.dataTransfer.effectAllowed = 'move';
+            evento.dataTransfer.setData('text/plain', tarjeta.dataset.id);
+            tarjeta.classList.add('arrastrando');
+        });
+        tablero.addEventListener('dragend', (evento) => {
+            const tarjeta = evento.target.closest('.kanban-tarjeta');
+            if (tarjeta) tarjeta.classList.remove('arrastrando');
+            tablero.querySelectorAll('.kanban-columna').forEach((c) => c.classList.remove('soltar-aqui'));
+            arrastrada = null;
+        });
+        tablero.addEventListener('dragover', (evento) => {
+            const columna = evento.target.closest('.kanban-columna');
+            if (!columna || !arrastrada) return;
+            evento.preventDefault();
+            tablero.querySelectorAll('.kanban-columna').forEach((c) => c.classList.toggle('soltar-aqui', c === columna));
+        });
+        tablero.addEventListener('drop', (evento) => {
+            const columna = evento.target.closest('.kanban-columna');
+            if (!columna || !arrastrada) return;
+            evento.preventDefault();
+            columna.classList.remove('soltar-aqui');
+            const destino = columna.dataset.columna;
+            const { id, estado } = arrastrada;
+            if (destino === estado) return;
+            if (estado === 'Pendiente' && destino === 'Asignada') abrirAsignar(id);
+            else if (estado === 'Asignada' && destino === 'Recolectada') abrirCompletar(id);
+            else Eco.Util.mostrarAviso('Ese movimiento no es posible: una solicitud pasa de Pendiente a En progreso (asignar) y de En progreso a Finalizado (registrar kilos).', 'info');
+        });
     }
 
     function repartidores() {
@@ -541,7 +666,7 @@
         document.getElementById('form-solicitud').addEventListener('submit', enviarSolicitud);
         document.getElementById('form-asignar').addEventListener('submit', enviarAsignar);
         document.getElementById('form-completar').addEventListener('submit', enviarCompletar);
-        ['lista-mis-solicitudes', 'lista-rutas', 'tabla-solicitudes-body'].forEach((id) => {
+        ['lista-mis-solicitudes', 'lista-rutas', 'tabla-solicitudes-body', 'sol-kanban'].forEach((id) => {
             document.getElementById(id).addEventListener('click', manejarAccion);
         });
 
@@ -566,6 +691,11 @@
             document.querySelectorAll('#sol-filtro-estado .chip-filtro').forEach((c) => c.classList.toggle('chip-activo', c === chip));
             renderAdmin();
         });
+        document.getElementById('sol-modo').addEventListener('click', (evento) => {
+            const boton = evento.target.closest('[data-modo]');
+            if (boton && boton.dataset.modo !== filtrosAdmin.modo) cambiarModo(boton.dataset.modo);
+        });
+        iniciarArrastre();
         document.getElementById('sol-buscar').addEventListener('input', Eco.Util.debounce((evento) => {
             filtrosAdmin.texto = evento.target.value.trim();
             renderAdmin();

@@ -102,6 +102,8 @@
         document.getElementById('reporte-periodo-pie').textContent =
             `${Eco.Util.formatearFecha(filtros.desde)} – ${Eco.Util.formatearFecha(filtros.hasta)}`;
 
+        renderDesempeno(filtros);
+
         return filas;
     }
 
@@ -197,6 +199,92 @@
         consultarRecolecciones();
     }
 
+    /* ------------------------ Desempeño del equipo ------------------------ */
+    // Por repartidor: solicitudes en progreso, retrasadas (fecha preferida
+    // vencida sin recolectar) y completadas en el período, separando las
+    // que se recolectaron a tiempo de las que se recolectaron tarde.
+    const SQL_DESEMPENO = `
+        SELECT u.id_usuario, u.nombre,
+               SUM(CASE WHEN s.estado = 'Asignada' THEN 1 ELSE 0 END) AS en_progreso,
+               SUM(CASE WHEN s.estado = 'Asignada' AND s.fecha_preferida < ? THEN 1 ELSE 0 END) AS retrasadas,
+               SUM(CASE WHEN s.estado = 'Recolectada' AND substr(s.fecha_cierre, 1, 10) BETWEEN ? AND ? THEN 1 ELSE 0 END) AS completadas,
+               SUM(CASE WHEN s.estado = 'Recolectada' AND substr(s.fecha_cierre, 1, 10) BETWEEN ? AND ?
+                         AND substr(s.fecha_cierre, 1, 10) <= s.fecha_preferida THEN 1 ELSE 0 END) AS a_tiempo,
+               SUM(CASE WHEN s.estado = 'Recolectada' AND substr(s.fecha_cierre, 1, 10) BETWEEN ? AND ?
+                         AND substr(s.fecha_cierre, 1, 10) > s.fecha_preferida THEN 1 ELSE 0 END) AS con_retraso,
+               COALESCE(SUM(CASE WHEN s.estado = 'Recolectada' AND substr(s.fecha_cierre, 1, 10) BETWEEN ? AND ?
+                         THEN s.kilos_recolectados END), 0) AS kilos
+        FROM usuarios u
+        JOIN perfiles p ON p.id_usuario = u.id_usuario
+        JOIN roles ro ON ro.id_rol = p.id_rol
+        LEFT JOIN solicitudes_recoleccion s ON s.id_repartidor = u.id_usuario
+        WHERE ro.codigo = 'repartidor'
+        GROUP BY u.id_usuario, u.nombre
+        ORDER BY completadas DESC, u.nombre COLLATE NOCASE`;
+
+    function consultarDesempeno(filtros) {
+        const hoy = Eco.Util.fechaHoyIso();
+        const { desde, hasta } = filtros;
+        return Eco.DB.consultar(SQL_DESEMPENO, [hoy, desde, hasta, desde, hasta, desde, hasta, desde, hasta]);
+    }
+
+    function porcentaje(parte, total) {
+        return total ? `${Math.round((parte / total) * 100)} %` : '—';
+    }
+
+    function renderDesempeno(filtros) {
+        const filas = consultarDesempeno(filtros);
+        const n = (valor) => Eco.Util.formatearNumero(Number(valor) || 0);
+        document.getElementById('tabla-desempeno-body').innerHTML = filas.map((f) => `
+            <tr>
+                <td><strong>${Eco.Util.escaparHtml(f.nombre)}</strong></td>
+                <td class="texto-derecha">${n(f.en_progreso)}</td>
+                <td class="texto-derecha">${Number(f.retrasadas) ? `<span class="texto-alerta">${n(f.retrasadas)}</span>` : '0'}</td>
+                <td class="texto-derecha"><strong>${n(f.completadas)}</strong></td>
+                <td class="texto-derecha">${n(f.a_tiempo)}</td>
+                <td class="texto-derecha">${n(f.con_retraso)}</td>
+                <td class="texto-derecha">${Eco.Util.formatearCantidad(f.kilos, 'kg')} kg</td>
+                <td class="texto-derecha">${porcentaje(Number(f.a_tiempo), Number(f.completadas))}</td>
+            </tr>`).join('');
+        document.getElementById('tabla-desempeno-body').closest('.tabla-contenedor').hidden = filas.length === 0;
+        document.getElementById('desempeno-vacio').hidden = filas.length > 0;
+
+        const total = (campo) => filas.reduce((suma, f) => suma + (Number(f[campo]) || 0), 0);
+        // Retrasadas sin completar: incluye las que siguen sin repartidor.
+        const sinAsignarVencidas = Eco.DB.consultarUno(
+            `SELECT COUNT(*) AS total FROM solicitudes_recoleccion
+             WHERE estado = 'Pendiente' AND fecha_preferida < ?`, [Eco.Util.fechaHoyIso()]).total || 0;
+        document.getElementById('des-completadas').textContent = n(total('completadas'));
+        document.getElementById('des-a-tiempo').textContent = porcentaje(total('a_tiempo'), total('completadas'));
+        document.getElementById('des-con-retraso').textContent = n(total('con_retraso'));
+        document.getElementById('des-retrasadas').textContent = n(total('retrasadas') + Number(sinAsignarVencidas));
+    }
+
+    function exportarDesempeno() {
+        const filtros = leerFiltros();
+        if (!validarFiltros(filtros)) return;
+        const filas = consultarDesempeno(filtros);
+        if (filas.length === 0) {
+            Eco.Util.mostrarAviso('No hay repartidores para exportar.', 'info');
+            return;
+        }
+        Eco.Util.descargarCSV(
+            `desempeno_${filtros.desde}_a_${filtros.hasta}.csv`,
+            ['Repartidor', 'En progreso', 'Retrasadas', 'Completadas', 'A tiempo', 'Con retraso', 'Kilos', 'Cumplimiento (%)'],
+            filas.map((f) => [
+                f.nombre,
+                Number(f.en_progreso) || 0,
+                Number(f.retrasadas) || 0,
+                Number(f.completadas) || 0,
+                Number(f.a_tiempo) || 0,
+                Number(f.con_retraso) || 0,
+                Eco.Util.numeroCSV(f.kilos),
+                Number(f.completadas) ? Math.round((Number(f.a_tiempo) / Number(f.completadas)) * 100) : ''
+            ])
+        );
+        Eco.Util.mostrarAviso('Reporte de desempeño exportado en CSV.');
+    }
+
     function exportarRecolecciones() {
         const filtros = leerFiltros();
         if (!validarFiltros(filtros)) return;
@@ -263,6 +351,7 @@
         });
         document.getElementById('btn-exportar-recolecciones').addEventListener('click', exportarRecolecciones);
         document.getElementById('btn-exportar-existencias').addEventListener('click', exportarExistencias);
+        document.getElementById('btn-exportar-desempeno').addEventListener('click', exportarDesempeno);
         ['reporte-desde', 'reporte-hasta'].forEach((idCampo) => {
             document.getElementById(idCampo).addEventListener('change', () => {
                 document.getElementById('reporte-error').textContent = '';
@@ -275,6 +364,7 @@
         render,
         consultarRecolecciones,
         exportarRecolecciones,
-        exportarExistencias
+        exportarExistencias,
+        exportarDesempeno
     };
 })();

@@ -82,7 +82,7 @@ SistemaGestionResiduos/
     ├── app.js                  Navegación, sincronización, modales
     ├── panel.js, materiales.js, recolecciones.js, inventario.js,
     │   historial.js, reportes.js           Centro de acopio
-    ├── solicitudes.js          Solicitudes: ciudadano, repartidor (rutas) y administrador
+    ├── solicitudes.js          Solicitudes: ciudadano, repartidor (rutas) y administrador (lista y tablero Kanban)
     ├── pedidos.js              Pedidos de empresas y panel empresarial
     └── administracion.js, perfil.js        Cuentas del municipio y perfil
 ```
@@ -175,9 +175,11 @@ Para probar varios roles a la vez usa varias cuentas de Google, cada una en un n
 - Registro con tipo de cuenta y municipio (Departamento → Municipio, DIVIPOLA del DANE); aprobación de repartidores.
 - Datos separados por municipio en el servidor (RLS y funciones), varios municipios en la misma base.
 - Solicitudes de recolección con fecha, franja, tipos de residuo y seguimiento por estados.
+- **Tablero Kanban** de solicitudes para el administrador (Pendiente → En progreso → Finalizado): arrastrar una tarjeta a *En progreso* abre la asignación y a *Finalizado* el registro de kilos.
 - Rutas del repartidor con contacto, enlace a Google Maps y registro de kilos por material.
 - Centro de acopio completo: materiales, recolecciones, inventario, salidas, historial, reportes, CSV.
 - Pedidos de empresas con reserva de material, entrega con salida automática y exportación CSV.
+- **Desempeño del equipo** en *Reportes*: por repartidor, solicitudes en progreso, retrasadas, completadas a tiempo y con retraso, kilos y porcentaje de cumplimiento, con exportación CSV.
 - Administración de cuentas y estadísticas del municipio; contadores de pendientes en el menú.
 - Actualización automática cada 30 segundos.
 

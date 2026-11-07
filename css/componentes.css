@@ -1971,3 +1971,177 @@ td .detalle-contacto .enlace-contacto {
     content: "✓";
     font-weight: 800;
 }
+
+/* ------------------------- Tablero Kanban de solicitudes ------------------------- */
+.selector-modo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 14px;
+}
+
+.selector-modo .chip-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.kanban-ayuda {
+    margin: 0 0 14px;
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+}
+
+.kanban-columnas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.kanban-columna {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 220px;
+    padding: 12px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--fondo);
+    transition: border-color var(--transicion), background var(--transicion);
+}
+
+.kanban-columna[data-columna="Pendiente"] { border-top: 3px solid #e0b25e; }
+.kanban-columna[data-columna="Asignada"] { border-top: 3px solid #5a8bb0; }
+.kanban-columna[data-columna="Recolectada"] { border-top: 3px solid var(--verde-500); }
+
+.kanban-columna.soltar-aqui {
+    border-color: var(--verde-500);
+    background: var(--verde-50);
+}
+
+.kanban-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.kanban-cabecera h3 {
+    margin: 0;
+    font-size: 0.92rem;
+}
+
+.kanban-conteo {
+    min-width: 26px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--blanco);
+    color: var(--texto-suave);
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.kanban-descripcion {
+    margin: 2px 0 10px;
+    color: var(--texto-tenue);
+    font-size: 0.74rem;
+}
+
+.kanban-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.kanban-vacia {
+    margin: 8px 0;
+    color: var(--texto-tenue);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.kanban-tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-pequeno);
+    background: var(--blanco);
+    box-shadow: var(--sombra);
+}
+
+.kanban-tarjeta[draggable="true"] {
+    cursor: grab;
+}
+
+.kanban-tarjeta.arrastrando {
+    opacity: 0.5;
+}
+
+.kanban-tarjeta.kanban-atrasada {
+    border-left: 3px solid var(--advertencia);
+}
+
+.kanban-tarjeta-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.kanban-tarjeta-titulo {
+    margin: 0;
+    color: var(--texto);
+    font-size: 0.86rem;
+    font-weight: 650;
+}
+
+.kanban-datos {
+    display: grid;
+    gap: 3px;
+    margin: 2px 0 0;
+    font-size: 0.76rem;
+}
+
+.kanban-datos div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.kanban-datos dt {
+    color: var(--texto-tenue);
+}
+
+.kanban-datos dd {
+    margin: 0;
+    color: var(--texto);
+    text-align: right;
+}
+
+.kanban-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+    .kanban-columnas {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ------------------------- Desempeño del equipo ------------------------- */
+.desempeno-resumen {
+    margin: 4px 0 14px;
+}
+
+.desempeno-nota {
+    margin: 12px 0 0;
+    font-size: 0.76rem;
+}
